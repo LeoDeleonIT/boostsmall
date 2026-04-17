@@ -1,0 +1,88 @@
+// Featured businesses for the "Verified & Loved" section.
+// Each shop carries a category color palette used to render its card header
+// as an intentional design element (no generic stock photos standing in).
+// `image` URLs are kept for when real photos are sourced later — cards
+// gracefully fall back to the colored header if an image isn't present.
+
+import { Cake, BookOpen, Scissors, Coffee, Bike, Palette } from "lucide-react";
+
+export const FEATURED_BUSINESSES = [
+  {
+    slug: "fluff-bake-bar",
+    name: "Fluff Bake Bar",
+    category: "Bakery",
+    neighborhood: "The Heights",
+    tagline: "Whimsical cookies & pastries from Houston's own Sugar Fairy since 2015.",
+    rating: 4.3,
+    reviews: 474,
+    verified: true,
+    icon: Cake,
+    palette: { bg: "#F4E4CC", ink: "#8B5A2B", soft: "#E6CFA3" },
+    image: "/images/businesses/business-fluff-bake-bar.jpg",
+  },
+  {
+    slug: "kaboom-books",
+    name: "Kaboom Books",
+    category: "Bookstore",
+    neighborhood: "Woodland Heights",
+    tagline: "100,000+ used titles in a labyrinthine space with a 25-year-old fig tree.",
+    rating: 4.7,
+    reviews: 134,
+    verified: true,
+    icon: BookOpen,
+    palette: { bg: "#DDE5D4", ink: "#4A5C3A", soft: "#C4D1B5" },
+    image: "/images/businesses/business-kaboom-books.jpg",
+  },
+  {
+    slug: "901-salon",
+    name: "901 Salon & Boutique",
+    category: "Salon",
+    neighborhood: "Midtown",
+    tagline: "60+ combined years of styling — best cut in Houston for the price.",
+    rating: 4.8,
+    reviews: 18,
+    verified: false,
+    icon: Scissors,
+    palette: { bg: "#F0D9D4", ink: "#9B4D4D", soft: "#E3BFB8" },
+    image: "/images/businesses/business-901-salon.jpg",
+  },
+  {
+    slug: "siphon-coffee",
+    name: "Siphon Coffee",
+    category: "Coffee",
+    neighborhood: "Montrose",
+    tagline: "Precision siphon-brewed pour-overs, handmade syrups, and breakfast tacos.",
+    rating: 4.5,
+    reviews: 944,
+    verified: true,
+    icon: Coffee,
+    palette: { bg: "#E8D5BE", ink: "#6B4423", soft: "#D4B896" },
+    image: "/images/businesses/business-siphon-coffee.jpg",
+  },
+  {
+    slug: "eado-bike-co",
+    name: "EaDo Bike Co",
+    category: "Repair",
+    neighborhood: "East End",
+    tagline: "Full-service bike shop at the head of the Columbia Tap Trail.",
+    rating: 4.2,
+    reviews: 56,
+    verified: false,
+    icon: Bike,
+    palette: { bg: "#D8DDE5", ink: "#3E5063", soft: "#BAC4D1" },
+    image: "/images/businesses/business-eado-bike.jpg",
+  },
+  {
+    slug: "archway-gallery",
+    name: "Archway Gallery",
+    category: "Art",
+    neighborhood: "Montrose",
+    tagline: "34 local artists, 50 years strong — voted Best Gallery in Houston 9× running.",
+    rating: 5.0,
+    reviews: 12,
+    verified: true,
+    icon: Palette,
+    palette: { bg: "#E4D7E8", ink: "#6B4A7A", soft: "#CEBBDA" },
+    image: "/images/businesses/business-archway-gallery.jpg",
+  },
+];
