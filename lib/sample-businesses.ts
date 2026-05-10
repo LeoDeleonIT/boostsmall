@@ -760,7 +760,8 @@ const ADDITIONAL_REAL_BUSINESSES: SampleBusiness[] = [
     priceTier: 2,
     locationCount: 1,
     photoUrls: [
-      "https://images.unsplash.com/photo-1581092334651-ddf26d9a09d0?auto=format&fit=crop&w=1600&q=80",
+      "https://images.unsplash.com/photo-1584695930355-f3dd455d6332?auto=format&fit=crop&w=1600&q=80",
+      "https://images.unsplash.com/photo-1736564176042-b3d49989b230?auto=format&fit=crop&w=1600&q=80",
     ],
     rating: 4.7,
     reviewCount: 184,
@@ -1605,7 +1606,8 @@ export const SAMPLE_BUSINESSES: SampleBusiness[] = [
     priceTier: 2,
     locationCount: 1,
     photoUrls: [
-      "https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&w=1600&q=80",
+      "https://images.unsplash.com/photo-1654440122140-f1fc995ddb34?auto=format&fit=crop&w=1600&q=80",
+      "https://images.unsplash.com/photo-1696154994502-93dd97495a4f?auto=format&fit=crop&w=1600&q=80",
     ],
     rating: 4.9,
     reviewCount: 67,
