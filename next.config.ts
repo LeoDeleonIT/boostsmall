@@ -18,6 +18,8 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "img1.wsimg.com" },
       { protocol: "https", hostname: "static.wixstatic.com" },
       { protocol: "https", hostname: "buchanansplants.com" },
+      { protocol: "https", hostname: "truthbbq.com" },
+      { protocol: "https", hostname: "www.pinkertonsbarbecue.com" },
     ],
   },
 };
