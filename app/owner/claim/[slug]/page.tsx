@@ -7,10 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import {
-  claimBusinessAction,
-  emailDomainMatchesWebsite,
-} from "@/server/actions/owner";
+import { claimBusinessAction } from "@/server/actions/owner";
+import { emailDomainMatchesWebsite } from "@/lib/email-domain";
 
 export const metadata: Metadata = {
   title: "Claim business",

@@ -7,24 +7,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { rateLimit, limits } from "@/lib/rate-limit";
-
-// ─── Email-domain match helper ──────────────────────────────────────────────
-
-export function emailDomainMatchesWebsite(
-  email: string | null | undefined,
-  websiteUrl: string | null | undefined
-): boolean {
-  if (!email || !websiteUrl) return false;
-  const emailDomain = email.split("@")[1]?.toLowerCase().trim();
-  if (!emailDomain) return false;
-  try {
-    const u = new URL(websiteUrl);
-    const webDomain = u.hostname.replace(/^www\./, "").toLowerCase();
-    return emailDomain === webDomain || emailDomain.endsWith(`.${webDomain}`);
-  } catch {
-    return false;
-  }
-}
+import { emailDomainMatchesWebsite } from "@/lib/email-domain";
 
 // ─── Claim business ─────────────────────────────────────────────────────────
 
