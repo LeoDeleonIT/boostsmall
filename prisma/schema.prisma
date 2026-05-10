@@ -89,6 +89,7 @@ enum VerificationMethod {
   PHONE
   EMAIL_DOMAIN
   DOCUMENT
+  ADMIN_OVERRIDE
 }
 
 enum FlagTargetType {
