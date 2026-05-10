@@ -344,6 +344,16 @@ export default async function BusinessDetailPage({
                   </a>
                 </li>
               )}
+              <li>
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${business.name} ${business.addressLine1} ${business.city} ${business.state}`)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-ink-soft hover:text-terracotta-deep"
+                >
+                  Also on Google Maps →
+                </a>
+              </li>
             </ul>
           </div>
 
