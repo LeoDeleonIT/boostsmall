@@ -3,11 +3,14 @@ import Link from "next/link";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { BusinessCard } from "@/components/business/business-card";
 import { MapPin, Search } from "@/components/icons";
 import { SAMPLE_BUSINESSES, type Category } from "@/lib/sample-businesses";
 import { categoryLabel, priceLabel } from "@/lib/format";
 import { HOUSTON_METRO } from "@/lib/cities";
+import { haversineMiles, formatDistanceMiles } from "@/lib/distance";
+import { lookupZipAction } from "@/server/actions/zip-lookup";
 
 export const metadata: Metadata = {
   title: "Search local favorites",
@@ -30,6 +33,8 @@ const SORT_OPTIONS = [
   { value: "reviews", label: "Most reviewed" },
 ] as const;
 
+const RADIUS_OPTIONS = ["3", "5", "10", "25", "50"] as const;
+
 interface SearchParams {
   q?: string;
   category?: Category | "ALL";
@@ -37,6 +42,12 @@ interface SearchParams {
   price?: string;
   minRating?: string;
   sort?: (typeof SORT_OPTIONS)[number]["value"];
+  // Location-based search
+  zip?: string;
+  lat?: string;
+  lng?: string;
+  radius?: string;
+  error?: string;
 }
 
 export default async function SearchPage({
@@ -51,44 +62,66 @@ export default async function SearchPage({
   const minPrice = params.price ? parseInt(params.price, 10) : 0;
   const minRating = params.minRating ? parseFloat(params.minRating) : 0;
   const sort = params.sort ?? "relevance";
+  const zip = params.zip?.trim() ?? "";
+  const lat = params.lat ? parseFloat(params.lat) : null;
+  const lng = params.lng ? parseFloat(params.lng) : null;
+  const radius = params.radius ? parseInt(params.radius, 10) : 10;
+  const usingLocation = lat !== null && lng !== null;
 
-  let results = [...SAMPLE_BUSINESSES];
+  let results = SAMPLE_BUSINESSES.map((b) => ({
+    business: b,
+    distance: usingLocation && b.lat && b.lng
+      ? haversineMiles(lat!, lng!, b.lat, b.lng)
+      : null,
+  }));
 
   if (q) {
     results = results.filter(
-      (b) =>
+      ({ business: b }) =>
         b.name.toLowerCase().includes(q) ||
         b.subcategory.toLowerCase().includes(q) ||
         b.description.toLowerCase().includes(q)
     );
   }
   if (category !== "ALL") {
-    results = results.filter((b) => b.category === category);
+    results = results.filter(({ business: b }) => b.category === category);
   }
   if (city) {
     results = results.filter(
-      (b) => b.city.toLowerCase() === city.toLowerCase()
+      ({ business: b }) => b.city.toLowerCase() === city.toLowerCase()
     );
   }
   if (minPrice) {
-    results = results.filter((b) => b.priceTier <= minPrice);
+    results = results.filter(({ business: b }) => b.priceTier <= minPrice);
   }
   if (minRating) {
-    results = results.filter((b) => b.rating >= minRating);
+    results = results.filter(({ business: b }) => b.rating >= minRating);
+  }
+  if (usingLocation) {
+    results = results.filter(
+      ({ distance }) => distance !== null && distance <= radius
+    );
   }
 
-  switch (sort) {
-    case "rating":
-      results.sort((a, b) => b.rating - a.rating);
-      break;
-    case "newest":
-      results.sort(
-        (a, b) => Number(!!b.recentlyAdded) - Number(!!a.recentlyAdded)
-      );
-      break;
-    case "reviews":
-      results.sort((a, b) => b.reviewCount - a.reviewCount);
-      break;
+  // Sort: distance wins when location is set; otherwise honor sort param
+  if (usingLocation) {
+    results.sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
+  } else {
+    switch (sort) {
+      case "rating":
+        results.sort((a, b) => b.business.rating - a.business.rating);
+        break;
+      case "newest":
+        results.sort(
+          (a, b) =>
+            Number(!!b.business.recentlyAdded) -
+            Number(!!a.business.recentlyAdded)
+        );
+        break;
+      case "reviews":
+        results.sort((a, b) => b.business.reviewCount - a.business.reviewCount);
+        break;
+    }
   }
 
   return (
@@ -97,11 +130,8 @@ export default async function SearchPage({
 
       {/* SEARCH BAR */}
       <section className="bg-background-soft border-b border-border">
-        <div className="mx-auto max-w-[1400px] px-6 py-6">
-          <form
-            action="/search"
-            className="flex flex-col md:flex-row gap-3"
-          >
+        <div className="mx-auto max-w-[1400px] px-6 py-6 space-y-3">
+          <form action="/search" className="flex flex-col md:flex-row gap-3">
             <div className="flex-1 flex items-center rounded-full border border-border-strong bg-surface px-4 py-2.5 focus-within:ring-2 focus-within:ring-terracotta">
               <Search size={18} />
               <input
@@ -131,20 +161,65 @@ export default async function SearchPage({
               Search
             </Button>
 
-            {/* preserve category/price filters */}
             {category !== "ALL" && (
               <input type="hidden" name="category" value={category} />
             )}
-            {minPrice ? (
-              <input type="hidden" name="price" value={minPrice} />
-            ) : null}
-            {minRating ? (
-              <input type="hidden" name="minRating" value={minRating} />
-            ) : null}
-            {sort !== "relevance" ? (
-              <input type="hidden" name="sort" value={sort} />
-            ) : null}
+            {minPrice ? <input type="hidden" name="price" value={minPrice} /> : null}
+            {minRating ? <input type="hidden" name="minRating" value={minRating} /> : null}
+            {sort !== "relevance" ? <input type="hidden" name="sort" value={sort} /> : null}
           </form>
+
+          {/* RADIUS / ZIP CODE FORM */}
+          <form
+            action={lookupZipAction}
+            className="flex flex-col sm:flex-row gap-2 items-start sm:items-center text-sm"
+          >
+            <span className="text-ink-soft font-semibold whitespace-nowrap shrink-0">
+              📍 Find near a ZIP:
+            </span>
+            <Input
+              name="zip"
+              type="text"
+              inputMode="numeric"
+              pattern="\d{5}"
+              maxLength={5}
+              defaultValue={zip}
+              placeholder="77007"
+              className="rounded-full max-w-[120px] tnum"
+            />
+            <span className="text-ink-soft text-xs">within</span>
+            <select
+              name="radius"
+              defaultValue={String(radius)}
+              className="rounded-full border border-border-strong bg-surface px-4 h-10 text-sm focus:outline-none focus:ring-2 focus:ring-terracotta"
+            >
+              {RADIUS_OPTIONS.map((r) => (
+                <option key={r} value={r}>
+                  {r} miles
+                </option>
+              ))}
+            </select>
+            <Button type="submit" variant="sage" size="sm" className="rounded-full">
+              Find nearby
+            </Button>
+            {usingLocation && (
+              <Link
+                href={buildHref(params, { zip: undefined, lat: undefined, lng: undefined, radius: undefined })}
+                className="text-xs text-terracotta-deep hover:underline ml-1"
+              >
+                Clear location
+              </Link>
+            )}
+            {/* preserve other filters */}
+            {q && <input type="hidden" name="q" value={q} />}
+            {category !== "ALL" && <input type="hidden" name="category" value={category} />}
+          </form>
+
+          {params.error && (
+            <p className="text-xs text-terracotta-deep">
+              {errorMessage(params.error)}
+            </p>
+          )}
         </div>
       </section>
 
@@ -223,33 +298,34 @@ export default async function SearchPage({
             </ul>
           </div>
 
-          <div>
-            <p className="text-xs uppercase tracking-widest font-bold text-sage-deep mb-3">
-              Sort by
-            </p>
-            <ul className="space-y-1.5 text-sm">
-              {SORT_OPTIONS.map((o) => (
-                <li key={o.value}>
-                  <Link
-                    href={buildHref(params, { sort: o.value })}
-                    className={
-                      sort === o.value
-                        ? "text-ink font-bold"
-                        : "text-ink-soft hover:text-ink"
-                    }
-                  >
-                    {o.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
+          {!usingLocation && (
+            <div>
+              <p className="text-xs uppercase tracking-widest font-bold text-sage-deep mb-3">
+                Sort by
+              </p>
+              <ul className="space-y-1.5 text-sm">
+                {SORT_OPTIONS.map((o) => (
+                  <li key={o.value}>
+                    <Link
+                      href={buildHref(params, { sort: o.value })}
+                      className={
+                        sort === o.value
+                          ? "text-ink font-bold"
+                          : "text-ink-soft hover:text-ink"
+                      }
+                    >
+                      {o.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           <div className="rounded-2xl border border-sage/30 bg-sage/5 p-4 text-sm">
             <p className="font-bold text-ink">Don&apos;t see a place?</p>
             <p className="mt-1 text-ink-soft">
-              Add it. We review every submission for the chain rule (≤5 locations,
-              independent).
+              Add it. We review every submission to keep the platform honest.
             </p>
             <Button variant="sage" size="sm" className="mt-3" asChild>
               <Link href="/submit">Add a business</Link>
@@ -268,17 +344,26 @@ export default async function SearchPage({
               </h1>
               <p className="mt-1 text-sm text-ink-soft">
                 {results.length} {results.length === 1 ? "place" : "places"}{" "}
-                {city ? `in ${city}` : "across the Houston metro"}
+                {usingLocation
+                  ? `within ${radius} mi of ${zip || `${lat?.toFixed(2)},${lng?.toFixed(2)}`}, sorted by distance`
+                  : city ? `in ${city}` : "across the Houston metro"}
               </p>
-            </div>
-            <div className="hidden md:flex items-center gap-2 rounded-full border border-border-strong bg-surface px-3 py-1.5 text-xs text-ink-soft">
-              <MapPin size={14} />
-              <span>Map view coming with Mapbox token</span>
             </div>
           </div>
 
-          {(category !== "ALL" || city || minPrice || minRating) && (
+          {(category !== "ALL" || city || minPrice || minRating || usingLocation) && (
             <div className="mb-6 flex flex-wrap gap-2">
+              {usingLocation && (
+                <FilterChip
+                  label={`Within ${radius} mi of ${zip || "you"}`}
+                  href={buildHref(params, {
+                    zip: undefined,
+                    lat: undefined,
+                    lng: undefined,
+                    radius: undefined,
+                  })}
+                />
+              )}
               {category !== "ALL" && (
                 <FilterChip
                   label={categoryLabel(category)}
@@ -309,7 +394,7 @@ export default async function SearchPage({
                 No matches with these filters.
               </p>
               <p className="mt-2 text-ink-soft">
-                Try clearing some filters, or{" "}
+                Try clearing some filters{usingLocation ? " or expanding the radius" : ""}, or{" "}
                 <Link
                   href="/submit"
                   className="text-terracotta-deep underline-offset-4 hover:underline"
@@ -321,8 +406,15 @@ export default async function SearchPage({
             </div>
           ) : (
             <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
-              {results.map((b) => (
-                <BusinessCard key={b.slug} business={b} />
+              {results.map(({ business: b, distance }) => (
+                <div key={b.slug} className="relative">
+                  <BusinessCard business={b} />
+                  {distance !== null && (
+                    <span className="absolute top-3 left-3 z-10 rounded-full bg-ink/80 text-white text-xs font-bold px-2.5 py-1 backdrop-blur-sm tnum">
+                      {formatDistanceMiles(distance)}
+                    </span>
+                  )}
+                </div>
               ))}
             </div>
           )}
@@ -354,9 +446,22 @@ function buildHref(
   for (const [k, v] of Object.entries({ ...current, ...patch })) {
     if (v !== undefined && v !== "" && v !== "ALL") next[k] = String(v);
   }
+  delete next.error;
   const qs = new URLSearchParams(next).toString();
   return qs ? `/search?${qs}` : "/search";
 }
 
-// Avoid prerender attempting to read URL params at build time.
+function errorMessage(code: string) {
+  switch (code) {
+    case "bad-zip":
+      return "Please enter a 5-digit ZIP code.";
+    case "zip-not-found":
+      return "We couldn't find that ZIP. Try another.";
+    case "no-mapbox-token":
+      return "Location search isn't configured yet.";
+    default:
+      return "Something went wrong with the location lookup.";
+  }
+}
+
 export const dynamic = "force-dynamic";

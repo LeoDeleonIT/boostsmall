@@ -222,6 +222,105 @@ const ALL_DENTAL_BUSINESSES: SampleBusiness[] = [
   ...PEARL_DENTISTRY_BUSINESSES,
 ];
 
+// ─── Other independent dental practices (not Trinity/Pearl/Waller) ─────────
+// Diversifying the dental category so it isn't just one brand.
+
+const OTHER_DENTAL_BUSINESSES: SampleBusiness[] = [
+  {
+    slug: "river-oaks-family-dentistry",
+    name: "River Oaks Family Dentistry",
+    description:
+      "Greenway Plaza family dental practice. Comprehensive care for every age, accepting new patients.",
+    category: "HEALTH_BEAUTY",
+    subcategory: "Dentist",
+    addressLine1: "24 Greenway Plaza # 804",
+    city: "Houston",
+    state: "TX",
+    postalCode: "77046",
+    lat: 29.732573,
+    lng: -95.431384,
+    phone: "+1-713-626-5151",
+    websiteUrl: "https://riveroaks-dentistry.com",
+    priceTier: 3,
+    locationCount: 1,
+    hours: DENTAL_HOURS,
+    photoUrls: rotateCover("river-oaks-family-dentistry", DENTAL_PHOTO_URLS),
+    rating: 4.8,
+    reviewCount: 187,
+    ownerVerified: false,
+    recentlyAdded: true,
+  },
+  {
+    slug: "smile-story-dentistry-uptown",
+    name: "Smile Story Dentistry",
+    description:
+      "General and cosmetic dentistry on Post Oak Blvd. Serves Heights, Montrose, River Oaks and surrounding neighborhoods.",
+    category: "HEALTH_BEAUTY",
+    subcategory: "Dentist",
+    addressLine1: "1700 Post Oak Blvd Ste 1-270",
+    city: "Houston",
+    state: "TX",
+    postalCode: "77056",
+    lat: 29.749631,
+    lng: -95.462195,
+    phone: "+1-281-404-2049",
+    websiteUrl: "https://www.smilestorydentistry.com",
+    priceTier: 3,
+    locationCount: 1,
+    hours: DENTAL_HOURS,
+    photoUrls: rotateCover("smile-story-dentistry-uptown", DENTAL_PHOTO_URLS),
+    rating: 4.7,
+    reviewCount: 142,
+    ownerVerified: false,
+  },
+  {
+    slug: "bissonnet-dental",
+    name: "Bissonnet Dental",
+    description:
+      "Family dental care on Bissonnet Street. Cleanings, fillings, crowns — the everyday essentials done well.",
+    category: "HEALTH_BEAUTY",
+    subcategory: "Dentist",
+    addressLine1: "5427 Bissonnet St Suite 300",
+    city: "Houston",
+    state: "TX",
+    postalCode: "77081",
+    lat: 29.703445,
+    lng: -95.47519,
+    phone: "+1-713-668-8600",
+    websiteUrl: "https://www.bissonnetdentalhouston.com",
+    priceTier: 2,
+    locationCount: 1,
+    hours: DENTAL_HOURS,
+    photoUrls: rotateCover("bissonnet-dental", DENTAL_PHOTO_URLS),
+    rating: 4.6,
+    reviewCount: 94,
+    ownerVerified: false,
+  },
+  {
+    slug: "bissonnet-family-dental",
+    name: "Bissonnet Family Dental",
+    description:
+      "Family-owned dental practice on Bissonnet. Dr. Lakhva took ownership in 2017.",
+    category: "HEALTH_BEAUTY",
+    subcategory: "Dentist",
+    addressLine1: "6047 Bissonnet St",
+    city: "Houston",
+    state: "TX",
+    postalCode: "77081",
+    lat: 29.696924,
+    lng: -95.487743,
+    websiteUrl: "https://bissonnetfamilydental.com",
+    priceTier: 2,
+    locationCount: 1,
+    hours: DENTAL_HOURS,
+    photoUrls: rotateCover("bissonnet-family-dental", DENTAL_PHOTO_URLS),
+    rating: 4.7,
+    reviewCount: 76,
+    ownerVerified: false,
+    recentlyAdded: true,
+  },
+];
+
 // ─── Real Houston legacy businesses (added via web research) ────────────────
 // Sources: Preservation Houston Legacy Restaurants 2026, Houstonia Magazine,
 // CultureMap, Yelp listings. All confirmed family-owned / independently held.
@@ -1232,6 +1331,7 @@ const ADDITIONAL_REAL_BUSINESSES: SampleBusiness[] = [
 
 export const SAMPLE_BUSINESSES: SampleBusiness[] = [
   ...ALL_DENTAL_BUSINESSES,
+  ...OTHER_DENTAL_BUSINESSES,
   ...ADDITIONAL_REAL_BUSINESSES,
   {
     slug: "bangkok-social-houston",

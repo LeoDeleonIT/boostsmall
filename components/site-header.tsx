@@ -4,11 +4,12 @@ import { UserNav } from "@/components/user-nav";
 import { Search } from "@/components/icons";
 
 const NAV_ITEMS = [
-  { label: "Restaurants", href: "/search?category=FOOD_DRINK" },
-  { label: "Home & Garden", href: "/search?category=SERVICES&sub=home" },
-  { label: "Auto Services", href: "/search?category=SERVICES&sub=auto" },
-  { label: "Health & Beauty", href: "/search?category=HEALTH_BEAUTY" },
-  { label: "Arts", href: "/search?category=ARTS" },
+  { label: "Eat & Drink",       href: "/search?category=FOOD_DRINK" },
+  { label: "Health & Wellness", href: "/search?category=HEALTH_BEAUTY" },
+  { label: "Shop",              href: "/search?category=RETAIL" },
+  { label: "Services",          href: "/search?category=SERVICES" },
+  { label: "Arts",              href: "/search?category=ARTS" },
+  { label: "Recommendations",   href: "/recommendations" },
 ];
 
 interface SiteHeaderProps {

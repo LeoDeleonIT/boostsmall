@@ -6,7 +6,6 @@ import { BusinessCard } from "@/components/business/business-card";
 import { UserNav } from "@/components/user-nav";
 import { topRated, recentlyAdded } from "@/lib/sample-businesses";
 import {
-  ChevronDown,
   Search,
   Utensils,
   House,
@@ -17,14 +16,14 @@ import {
   MoreHorizontal,
 } from "@/components/icons";
 
-const NAV_CATEGORIES = [
-  "Restaurants",
-  "Home & Garden",
-  "Auto Services",
-  "Health & Beauty",
-  "Arts",
-  "More",
-] as const;
+const NAV_CATEGORIES: Array<{ label: string; href: string }> = [
+  { label: "Eat & Drink",       href: "/search?category=FOOD_DRINK" },
+  { label: "Health & Wellness", href: "/search?category=HEALTH_BEAUTY" },
+  { label: "Shop",              href: "/search?category=RETAIL" },
+  { label: "Services",          href: "/search?category=SERVICES" },
+  { label: "Arts",              href: "/search?category=ARTS" },
+  { label: "Recommendations",   href: "/recommendations" },
+];
 
 interface CategoryTile {
   name: string;
@@ -53,8 +52,8 @@ const TILES: CategoryTile[] = [
     icon: Car,
   },
   {
-    name: "Health & Beauty",
-    description: "Dentists, salons, barbers, spas",
+    name: "Health & Wellness",
+    description: "Dentists, yoga, massage, salons, barbers",
     href: "/search?category=HEALTH_BEAUTY",
     icon: Sparkles,
   },
@@ -108,15 +107,14 @@ export default function HomePage() {
             </Link>
 
             <nav className="hidden lg:flex items-center gap-7 text-sm font-semibold text-white/95">
-              {NAV_CATEGORIES.map((label) => (
-                <button
-                  key={label}
-                  type="button"
-                  className="inline-flex items-center gap-1.5 hover:text-white"
+              {NAV_CATEGORIES.map((cat) => (
+                <Link
+                  key={cat.label}
+                  href={cat.href}
+                  className="inline-flex items-center hover:text-white"
                 >
-                  {label}
-                  <ChevronDown />
-                </button>
+                  {cat.label}
+                </Link>
               ))}
             </nav>
 

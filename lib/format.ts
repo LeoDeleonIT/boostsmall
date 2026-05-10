@@ -13,7 +13,7 @@ export function categoryLabel(cat: string): string {
     case "SERVICES":
       return "Services";
     case "HEALTH_BEAUTY":
-      return "Health & Beauty";
+      return "Health & Wellness";
     case "ARTS":
       return "Arts";
     default:
