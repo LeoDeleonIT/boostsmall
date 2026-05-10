@@ -1,0 +1,276 @@
+// boostsmall — Prisma schema
+// Postgres on Neon. Auth.js v5 tables + custom domain.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Auth.js v5 (with Prisma adapter)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Domain
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  USER
+  OWNER
+  MODERATOR
+  ADMIN
+}
+
+enum BusinessCategory {
+  FOOD_DRINK
+  RETAIL
+  SERVICES
+  HEALTH_BEAUTY
+  ARTS
+  OTHER
+}
+
+enum BusinessStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum ReviewStatus {
+  PUBLISHED
+  HIDDEN_BY_FILTER
+  REMOVED
+}
+
+enum VerificationMethod {
+  PHONE
+  EMAIL_DOMAIN
+  DOCUMENT
+}
+
+enum FlagTargetType {
+  BUSINESS
+  REVIEW
+  PHOTO
+  USER
+}
+
+enum FlagStatus {
+  OPEN
+  RESOLVED
+  DISMISSED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  name          String?
+  username      String    @unique
+  avatarUrl     String?
+  image         String?   // Auth.js convention; mirrors avatarUrl on first sign-in
+  bio           String?
+  role          UserRole  @default(USER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  lastSeenAt    DateTime?
+
+  accounts          Account[]
+  sessions          Session[]
+  reviews           Review[]
+  ownedBusinesses   BusinessOwner[]
+  photos            Photo[]
+  submittedBusinesses Business[] @relation("SubmittedBusinesses")
+  approvedBusinesses  Business[] @relation("ApprovedBusinesses")
+  reportedFlags       ModerationFlag[] @relation("ReportedFlags")
+  resolvedFlags       ModerationFlag[] @relation("ResolvedFlags")
+  addedChainEntries   ChainBlocklist[]
+
+  @@index([username])
+  @@index([role])
+}
+
+model Business {
+  id              String           @id @default(cuid())
+  slug            String           @unique
+  name            String
+  description     String?
+  category        BusinessCategory
+  subcategory     String?
+
+  addressLine1    String
+  addressLine2    String?
+  city            String
+  state           String
+  postalCode      String
+  country         String           @default("US")
+  lat             Float?
+  lng             Float?
+
+  phone           String?
+  websiteUrl      String?
+  instagramHandle String?
+
+  hours           Json?    // { mon: [{open:"08:00", close:"17:00"}], ... }
+  priceTier       Int      @default(2)  // 1..4
+  locationCount   Int      @default(1)  // self-reported, used for chain check
+
+  status          BusinessStatus @default(PENDING)
+  rejectionReason String?
+
+  submittedById   String?
+  approvedById    String?
+  submittedBy     User?     @relation("SubmittedBusinesses", fields: [submittedById], references: [id])
+  approvedBy      User?     @relation("ApprovedBusinesses",  fields: [approvedById],  references: [id])
+
+  createdAt       DateTime  @default(now())
+  approvedAt      DateTime?
+  updatedAt       DateTime  @updatedAt
+
+  reviews   Review[]
+  photos    Photo[]
+  owners    BusinessOwner[]
+
+  @@index([status])
+  @@index([category])
+  @@index([city, state])
+  @@index([lat, lng])
+}
+
+model BusinessOwner {
+  id                  String              @id @default(cuid())
+  userId              String
+  businessId          String
+  verifiedAt          DateTime
+  verificationMethod  VerificationMethod
+  isPrimary           Boolean             @default(false)
+  createdAt           DateTime            @default(now())
+
+  user      User     @relation(fields: [userId],     references: [id], onDelete: Cascade)
+  business  Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, businessId])
+  @@index([businessId])
+}
+
+model Review {
+  id              String       @id @default(cuid())
+  userId          String
+  businessId      String
+  rating          Int          // 1..5, validated in app layer
+  body            String
+  visitDate       DateTime?
+  status          ReviewStatus @default(PUBLISHED)
+  filterScore     Float?
+  helpfulCount    Int          @default(0)
+  ownerResponse   String?
+  ownerResponseAt DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  user     User     @relation(fields: [userId],     references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  photos   Photo[]
+
+  @@unique([userId, businessId]) // one review per user per business
+  @@index([businessId, status, createdAt])
+  @@index([userId, createdAt])
+}
+
+model Photo {
+  id          String   @id @default(cuid())
+  userId      String
+  businessId  String?
+  reviewId    String?
+  url         String
+  blurhash    String?
+  width       Int
+  height      Int
+  caption     String?
+  createdAt   DateTime @default(now())
+
+  user     User      @relation(fields: [userId],     references: [id], onDelete: Cascade)
+  business Business? @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  review   Review?   @relation(fields: [reviewId],   references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([reviewId])
+  @@index([userId])
+}
+
+model ChainBlocklist {
+  id              String   @id @default(cuid())
+  name            String
+  normalizedName  String   @unique
+  parentCompany   String?
+  reason          String?
+  addedById       String?
+  addedAt         DateTime @default(now())
+
+  addedBy User? @relation(fields: [addedById], references: [id], onDelete: SetNull)
+
+  @@index([normalizedName])
+}
+
+model ModerationFlag {
+  id            String         @id @default(cuid())
+  targetType    FlagTargetType
+  targetId      String
+  reason        String
+  notes         String?
+  status        FlagStatus     @default(OPEN)
+  reportedById  String
+  resolvedById  String?
+  createdAt     DateTime       @default(now())
+  resolvedAt    DateTime?
+
+  reportedBy User  @relation("ReportedFlags", fields: [reportedById], references: [id], onDelete: Cascade)
+  resolvedBy User? @relation("ResolvedFlags", fields: [resolvedById], references: [id], onDelete: SetNull)
+
+  @@index([targetType, targetId])
+  @@index([status])
+  @@index([reportedById])
+}

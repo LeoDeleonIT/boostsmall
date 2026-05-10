@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /design
+Disallow: /admin
+Disallow: /moderate
+Disallow: /owner
+Disallow: /api/
+
+Sitemap: https://boostsmall.com/sitemap.xml

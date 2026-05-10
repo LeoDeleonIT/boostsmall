@@ -1,26 +1,96 @@
 @import "tailwindcss";
 
+/* ─────────────────────────────────────────────────────────────────────────
+   boostsmall design tokens — driven by the brand identity (logo):
+   warm cream background, sage primary, terracotta secondary.
+   ───────────────────────────────────────────────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f4ecd8;          /* warm cream from logo */
+  --background-soft: #faf5e8;     /* lighter cream for cards on photos, hovers */
+  --surface: #ffffff;
+  --ink: #2c2a25;                 /* warm near-black */
+  --ink-soft: #6f6a5d;            /* warm gray */
+
+  --sage: #7d8b5e;                /* "boost" green from logo */
+  --sage-deep: #5f6c45;           /* darker sage for hover/contrast */
+  --terracotta: #c97b5a;          /* "small" orange from logo */
+  --terracotta-deep: #a85e3f;     /* darker terracotta for hover */
+
+  --accent: var(--sage);          /* primary brand action */
+  --accent-hover: var(--sage-deep);
+  --accent-warm: var(--terracotta);
+  --accent-warm-hover: var(--terracotta-deep);
+
+  --border: rgba(44, 42, 37, 0.1);
+  --border-strong: rgba(44, 42, 37, 0.18);
+  --focus-ring: var(--terracotta);
 }
 
 @theme inline {
   --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background-soft: var(--background-soft);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+
+  --color-sage: var(--sage);
+  --color-sage-deep: var(--sage-deep);
+  --color-terracotta: var(--terracotta);
+  --color-terracotta-deep: var(--terracotta-deep);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-warm: var(--accent-warm);
+  --color-accent-warm-hover: var(--accent-warm-hover);
+
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+
+  --font-display: var(--font-nunito);
+  --font-sans: var(--font-nunito);
+  --font-wordmark: var(--font-quicksand);
+
+  --radius: 0.75rem;     /* a touch softer than before */
+  --radius-pill: 9999px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
-}
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  body {
+    background: var(--background);
+    color: var(--ink);
+    font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  }
+
+  ::selection {
+    background: var(--terracotta);
+    color: #fff;
+  }
+
+  *:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  .font-display {
+    font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  .font-wordmark {
+    font-family: var(--font-wordmark), ui-sans-serif, system-ui, sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  .tnum {
+    font-feature-settings: "tnum" 1;
+  }
 }
