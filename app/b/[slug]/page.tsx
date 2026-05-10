@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { RatingStars } from "@/components/review/rating-stars";
 import { MapPin } from "@/components/icons";
+import { MapboxMap } from "@/components/map/mapbox-map";
 import {
   findBusinessBySlug,
   SAMPLE_BUSINESSES,
@@ -239,16 +240,32 @@ export default async function BusinessDetailPage({
 
         {/* INFO column */}
         <aside className="space-y-6">
-          {/* MAP placeholder */}
+          {/* MAP */}
           <div className="rounded-2xl overflow-hidden border border-border bg-surface">
-            <div className="relative aspect-[4/3] bg-sage/5 flex items-center justify-center">
-              <div className="text-center text-sage-deep">
-                <MapPin size={28} className="mx-auto" />
-                <p className="text-xs mt-2 font-semibold">
-                  Mapbox map renders once token is configured
-                </p>
+            {business.lat && business.lng ? (
+              <MapboxMap
+                center={[business.lng, business.lat]}
+                zoom={15}
+                pins={[
+                  {
+                    id: business.slug,
+                    lng: business.lng,
+                    lat: business.lat,
+                    label: business.name,
+                  },
+                ]}
+                className="aspect-[4/3] w-full"
+              />
+            ) : (
+              <div className="relative aspect-[4/3] bg-sage/5 flex items-center justify-center">
+                <div className="text-center text-sage-deep">
+                  <MapPin size={28} className="mx-auto" />
+                  <p className="text-xs mt-2 font-semibold">
+                    Address not yet geocoded
+                  </p>
+                </div>
               </div>
-            </div>
+            )}
             <div className="p-5">
               <p className="font-bold text-ink">{business.addressLine1}</p>
               <p className="text-sm text-ink-soft">
