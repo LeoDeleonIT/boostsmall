@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { RatingStars } from "@/components/review/rating-stars";
 import { BusinessCard } from "@/components/business/business-card";
 import { Wordmark } from "@/components/wordmark";
+import { DbStatus } from "@/components/db-status";
 
 export const metadata: Metadata = {
   title: "Design system",
@@ -348,6 +349,16 @@ export default function DesignSystemPage() {
             dark photo.
           </p>
         </div>
+      </Section>
+
+      <Section eyebrow="09" title="Status">
+        <DbStatus />
+        <p className="mt-4 text-sm text-ink-soft max-w-[680px]">
+          Live read from the Neon database. If this shows red, set
+          <code className="bg-ink/5 rounded px-1.5 py-0.5 mx-1">DATABASE_URL</code>
+          in <code className="bg-ink/5 rounded px-1.5 py-0.5">.env.local</code> and
+          run <code className="bg-ink/5 rounded px-1.5 py-0.5 mx-1">pnpm db:push && pnpm db:seed && pnpm db:seed-chains</code>.
+        </p>
       </Section>
 
       <footer className="border-t border-border">
