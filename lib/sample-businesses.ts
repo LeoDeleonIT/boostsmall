@@ -2523,14 +2523,41 @@ export function findBusinessBySlug(slug: string): SampleBusiness | undefined {
   return SAMPLE_BUSINESSES.find((b) => b.slug === slug);
 }
 
+// Groups multi-location brands so curated/promo lists don't get dominated by
+// one chain's locations (e.g. all 16 Trinity Dental sites). Search stays
+// un-deduped so users can still find their nearest location.
+function brandKey(b: SampleBusiness): string {
+  if (b.websiteUrl) return b.websiteUrl.toLowerCase().replace(/\/$/, "");
+  return b.name.split(/\s+[–-]\s+/)[0].toLowerCase();
+}
+
+export function dedupeByBrand(businesses: SampleBusiness[]): SampleBusiness[] {
+  const best = new Map<string, SampleBusiness>();
+  for (const b of businesses) {
+    const key = brandKey(b);
+    const cur = best.get(key);
+    if (
+      !cur ||
+      b.rating > cur.rating ||
+      (b.rating === cur.rating && b.reviewCount > cur.reviewCount)
+    ) {
+      best.set(key, b);
+    }
+  }
+  return [...best.values()];
+}
+
 export function topRated(limit = 6): SampleBusiness[] {
-  return [...SAMPLE_BUSINESSES]
+  return dedupeByBrand(SAMPLE_BUSINESSES)
     .sort((a, b) => b.rating - a.rating || b.reviewCount - a.reviewCount)
     .slice(0, limit);
 }
 
 export function recentlyAdded(limit = 6): SampleBusiness[] {
-  return SAMPLE_BUSINESSES.filter((b) => b.recentlyAdded).slice(0, limit);
+  return dedupeByBrand(SAMPLE_BUSINESSES.filter((b) => b.recentlyAdded)).slice(
+    0,
+    limit
+  );
 }
 
 export function byCategory(cat: Category | "ALL"): SampleBusiness[] {

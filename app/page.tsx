@@ -285,7 +285,7 @@ export default function HomePage() {
         <div className="mx-auto max-w-[1200px] px-6 grid md:grid-cols-3 gap-8">
           <Promise
             title="Independent only"
-            body="Five locations or fewer. Not publicly traded. Not on the chain blocklist. Verified by humans before they go live."
+            body="Family-owned and not publicly traded. Not on the chain blocklist. Verified by humans before they go live."
           />
           <Promise
             title="Reviews from neighbors"

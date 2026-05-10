@@ -4,7 +4,7 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { BusinessCard } from "@/components/business/business-card";
 import { Button } from "@/components/ui/button";
-import { SAMPLE_BUSINESSES, type Category } from "@/lib/sample-businesses";
+import { SAMPLE_BUSINESSES, dedupeByBrand, type Category } from "@/lib/sample-businesses";
 
 export const metadata: Metadata = {
   title: "Recommendations",
@@ -21,19 +21,20 @@ const FEATURED_CATEGORIES: Array<{ id: Category; label: string }> = [
 ];
 
 export default function RecommendationsPage() {
-  // Top-rated overall
-  const topRated = [...SAMPLE_BUSINESSES]
+  // Curated lists collapse multi-location brands to one entry so a single
+  // chain (e.g. Trinity Dental's 16 sites) can't dominate the page.
+  const deduped = dedupeByBrand(SAMPLE_BUSINESSES);
+
+  const topRated = [...deduped]
     .sort((a, b) => b.rating - a.rating || b.reviewCount - a.reviewCount)
     .slice(0, 6);
 
-  // Owner-verified picks
-  const ownerVerified = [...SAMPLE_BUSINESSES]
+  const ownerVerified = [...deduped]
     .filter((b) => b.ownerVerified)
     .sort((a, b) => b.rating - a.rating)
     .slice(0, 6);
 
-  // Newly added
-  const newest = SAMPLE_BUSINESSES.filter((b) => b.recentlyAdded).slice(0, 6);
+  const newest = deduped.filter((b) => b.recentlyAdded).slice(0, 6);
 
   return (
     <main className="min-h-screen flex flex-col bg-background">
@@ -66,7 +67,7 @@ export default function RecommendationsPage() {
 
       {/* PER-CATEGORY TOP PICKS */}
       {FEATURED_CATEGORIES.map((cat) => {
-        const top = [...SAMPLE_BUSINESSES]
+        const top = deduped
           .filter((b) => b.category === cat.id)
           .sort((a, b) => b.rating - a.rating || b.reviewCount - a.reviewCount)
           .slice(0, 3);
