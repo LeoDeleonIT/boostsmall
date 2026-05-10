@@ -13,7 +13,7 @@ export default async function SubmitSuccessPage({
 }: {
   searchParams: Promise<{ slug?: string; note?: string }>;
 }) {
-  const { slug, note } = await searchParams;
+  const { note } = await searchParams;
 
   return (
     <main className="min-h-screen flex flex-col bg-background">

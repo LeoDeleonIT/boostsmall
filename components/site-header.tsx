@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Wordmark } from "@/components/wordmark";
-import { Button } from "@/components/ui/button";
 import { UserNav } from "@/components/user-nav";
 import { Search } from "@/components/icons";
 
