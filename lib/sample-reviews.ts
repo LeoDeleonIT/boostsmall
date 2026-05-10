@@ -1,11 +1,9 @@
 // Mock review content shown on /b/[slug] until real reviews exist.
 //
-// Style modeled on the kind of detail you see in published reviews —
-// specific dishes, named staff, "we've been four times" — so the pages
-// feel populated rather than visibly templated. All entries are seed
-// placeholders. Wipe before launch via:
+// Voice modeled on actual Google reviews — short, casual, lots of "!",
+// occasional caps, run-on sentences, real-feeling specifics. Not polished
+// blog prose. All entries are seed placeholders. Wipe before launch via:
 //   SAMPLE_REVIEWS.filter(r => !r.id.startsWith("seed-"))
-// or just truncate the file.
 
 import { SAMPLE_BUSINESSES, type SampleBusiness } from "./sample-businesses";
 
@@ -44,152 +42,86 @@ const AUTHORS: Array<{ name: string; username: string }> = [
   { name: "Ines C.",    username: "ines-c" },
   { name: "Dion E.",    username: "dion-e" },
   { name: "Lupita A.",  username: "lupita-a" },
+  { name: "Brandi M.",  username: "brandi-m" },
+  { name: "Carlos D.",  username: "carlos-d" },
+  { name: "Tasha P.",   username: "tasha-p" },
+  { name: "Reggie B.",  username: "reggie-b" },
 ];
 
 // ─── Templates per category ─────────────────────────────────────────────────
 
-type Template = (b: SampleBusiness) => { body: string; rating: 3 | 4 | 5 };
+type Template = (b: SampleBusiness) => { body: string; rating: 1 | 2 | 3 | 4 | 5 };
 
 const FOOD_DRINK_TEMPLATES: Template[] = [
-  (b) => ({
-    rating: 5,
-    body: `Best ${b.subcategory.toLowerCase().split(" · ")[0]} I've found in ${b.city}. We came in on a weeknight and the kitchen was on point — every dish landed. Owner stopped by the table to check on us, and you could tell they actually cared. We'll be back.`,
-  }),
-  (b) => ({
-    rating: 5,
-    body: `My partner and I have been four times in the last two months. That should tell you everything. Vibe is unpretentious, prices are honest, and the service has the warmth you can only get when the family running the place is actually there.`,
-  }),
-  (b) => ({
-    rating: 4,
-    body: `Solid spot. Patio was the move on a Saturday afternoon. Service was a touch slow when it got busy but the food more than made up for it. Excited to come back and try the rest of the menu.`,
-  }),
-  (b) => ({
-    rating: 5,
-    body: `Hands-down a favorite ${b.city} ${b.subcategory.toLowerCase().split(" · ")[0]}. Attentive service, a room that makes you want to stay an extra hour, and prices that don't punish you for caring about food. Reservations recommended on weekends.`,
-  }),
-  (b) => ({
-    rating: 4,
-    body: `Came here for a friend's birthday. Group of 8, they handled it without a hiccup. The owner came over to wish her happy birthday — that personal touch matters. Food was very good, prices fair for what you get.`,
-  }),
-  (b) => ({
-    rating: 3,
-    body: `Decent. The place has a real local feel which I appreciated. A couple of dishes were standouts, others were fine. Worth a try if you're in ${b.city}, but I won't be making a special trip.`,
-  }),
+  () => ({ rating: 5, body: `Love this place! Been coming for years.` }),
+  () => ({ rating: 5, body: `Great food, great service, great vibes. 10/10` }),
+  () => ({ rating: 5, body: `My new favorite spot in the area. Will be back next week probably lol` }),
+  (b) => ({ rating: 5, body: `Came here for my birthday and the staff made it so special. Best ${b.subcategory.toLowerCase().split(" · ")[0]} I've had in a long time.` }),
+  () => ({ rating: 5, body: `Family owned and you can tell. The owner came over to our table to say hi. Don't see that anymore.` }),
+  () => ({ rating: 5, body: `Service was quick even on a Saturday night. Drinks were strong. Will absolutely be back!!` }),
+  () => ({ rating: 4, body: `Good food, friendly staff. Patio gets a little loud when it fills up but the food makes up for it.` }),
+  () => ({ rating: 4, body: `Solid spot. Nothing crazy but consistent every time we come.` }),
+  () => ({ rating: 4, body: `Tried this place after seeing it pop up on my feed. Glad I did. Will come back.` }),
+  () => ({ rating: 5, body: `If you haven't been here yet what are you doing. Seriously go.` }),
+  () => ({ rating: 3, body: `Food was fine. Service was a little slow but they were busy. Probably try again on a quieter day.` }),
+  (b) => ({ rating: 5, body: `Took the in-laws here and they were impressed. Says a lot. ${b.city} needs more spots like this.` }),
 ];
 
 const DENTAL_TEMPLATES: Template[] = [
-  (b) => ({
-    rating: 5,
-    body: `I have white-coat anxiety and the team here was incredibly patient with me. They walked through every step before doing anything. Front desk knew my name on the second visit. This is what dental care should feel like.`,
-  }),
-  (b) => ({
-    rating: 5,
-    body: `Took my whole family — kids included. Zero pressure on cosmetic upsells, which I really appreciated after the chain we used to go to. Cleanings were thorough but quick. Highly recommend the ${b.city} office.`,
-  }),
-  (b) => ({
-    rating: 5,
-    body: `Saturday and early hours are a lifesaver when you work full-time. They also accept my insurance, which not every dentist around here does. The hygienist was gentle and answered all my dumb questions without being condescending.`,
-  }),
-  (b) => ({
-    rating: 4,
-    body: `Clean office, kind staff, no surprise charges on the bill. Wait was about 15 minutes past my appointment time but once I was in the chair things moved efficiently. Will be back for my next cleaning.`,
-  }),
-  (b) => ({
-    rating: 5,
-    body: `Came in for a chipped tooth and they fit me in same-day. Fixed it cleanly, explained the cost upfront, no pressure to add anything. Honest dental care is hard to find — this practice is the real deal.`,
-  }),
-  (b) => ({
-    rating: 5,
-    body: `My kids actually look forward to going here, which I never thought I'd say about a dentist. The team is genuinely warm with little ones. ${b.city} is lucky to have this office.`,
-  }),
-  (b) => ({
-    rating: 4,
-    body: `Switched here from a corporate practice and the difference is night and day. Same level of equipment but so much more personal. Office is well-run and the dentists clearly care.`,
-  }),
+  () => ({ rating: 5, body: `Best dentist I've been to! Staff is so nice and welcoming.` }),
+  () => ({ rating: 5, body: `Took my kids here, they actually liked it. Front desk lady is the sweetest.` }),
+  () => ({ rating: 5, body: `Saturday hours saved me. Got in fast, no pressure to upsell anything I didn't need. Highly recommend!!` }),
+  () => ({ rating: 5, body: `I have a lot of anxiety about the dentist and the team made me feel comfortable the whole time.` }),
+  () => ({ rating: 4, body: `Wait was a little long but once I was in the chair things moved quick. Cleaning was thorough.` }),
+  () => ({ rating: 5, body: `Switched from a corporate office and the difference is huge. They actually remember you.` }),
+  () => ({ rating: 5, body: `Came in same day for a broken tooth. Fixed it on the spot. Lifesaver.` }),
+  () => ({ rating: 5, body: `Honest pricing, no surprise charges. They take my insurance which is huge.` }),
+  () => ({ rating: 5, body: `My whole family comes here. Even my picky toddler sits still for the cleaning. That's a miracle lol` }),
+  () => ({ rating: 4, body: `Good office. Front desk is super helpful with insurance stuff. Wish parking was easier but otherwise no complaints.` }),
+  () => ({ rating: 5, body: `Dr was great. Explained everything in regular english not dental jargon. Appreciate that.` }),
+  () => ({ rating: 3, body: `Service was good but I waited 40 mins past my appointment time. Cleaning itself was fine.` }),
+  () => ({ rating: 5, body: `5 stars no notes. Best dental experience I've ever had.` }),
 ];
 
 const RETAIL_TEMPLATES: Template[] = [
-  (b) => ({
-    rating: 5,
-    body: `Staff recommendations here are unmatched. I asked for "something I'd like if I love X" and got handed exactly the right thing. The kind of place that makes a neighborhood worth living in.`,
-  }),
-  (b) => ({
-    rating: 5,
-    body: `Could spend hours here. Carefully curated, the staff actually know their stuff, and the prices are fair for what they're sourcing. Bought way more than I planned to. Worth the trip to ${b.city}.`,
-  }),
-  (b) => ({
-    rating: 4,
-    body: `Lovely shop. Found a piece I'd been hunting for online for months. Owner threw in some history about where it came from — that storytelling makes the purchase feel meaningful, not transactional.`,
-  }),
-  (b) => ({
-    rating: 5,
-    body: `${b.name} is a Houston institution. I bring out-of-town friends here whenever they visit. Independent spots like this are why we live in this city.`,
-  }),
-  (b) => ({
-    rating: 5,
-    body: `Came in for one thing, left with three. The owner remembered me from a previous visit and asked how the last purchase worked out. That kind of attention is rare these days.`,
-  }),
-  (b) => ({
-    rating: 4,
-    body: `Smaller selection than the big-box stores but every item has been chosen with thought. I'd rather pay a bit more here knowing my money stays in the neighborhood.`,
-  }),
+  () => ({ rating: 5, body: `Cute shop! Found a few things I had to have. Will be back for holiday shopping.` }),
+  () => ({ rating: 5, body: `Owner is the nicest person. Helped me find exactly what I was looking for.` }),
+  () => ({ rating: 5, body: `My favorite spot in the neighborhood. Could spend hours just browsing.` }),
+  () => ({ rating: 5, body: `Bought way more than I planned to lol. So many good finds.` }),
+  () => ({ rating: 4, body: `Great selection. A bit on the pricey side but you're paying for quality + supporting local.` }),
+  (b) => ({ rating: 5, body: `${b.name} is a treasure. Hope they stay open forever.` }),
+  () => ({ rating: 5, body: `Bring all my out of town friends here when they visit. Always a hit.` }),
+  () => ({ rating: 4, body: `Solid local shop. Staff knows their stuff and isn't pushy.` }),
+  () => ({ rating: 5, body: `Got the best gift here for my mom's birthday. She loved it. They even wrapped it.` }),
+  () => ({ rating: 3, body: `Cute store but selection is small. Worth a quick browse if you're in the area.` }),
 ];
 
 const SERVICES_TEMPLATES: Template[] = [
-  (b) => ({
-    rating: 5,
-    body: `Called in the morning, they came out by lunch, problem fixed by 2pm. Honest pricing, no upsell, didn't try to convince me I needed anything I didn't. Saving the number for next time.`,
-  }),
-  (b) => ({
-    rating: 5,
-    body: `These folks have been doing this for decades and it shows. Diagnosed the issue in five minutes, gave me a fair quote, and stuck to it. I'll never use a chain shop again.`,
-  }),
-  (b) => ({
-    rating: 4,
-    body: `Same-day appointment, took the time to walk me through what was wrong and why. Final bill came in under the estimate. That alone earned my repeat business.`,
-  }),
-  (b) => ({
-    rating: 5,
-    body: `Family-run and you can tell. Got a personal call after the work was done to make sure everything was holding up. Who does that anymore? I've already recommended them to two neighbors.`,
-  }),
-  (b) => ({
-    rating: 5,
-    body: `Top-tier ${b.subcategory.toLowerCase().split(" · ")[0]} in ${b.city}. Fair, fast, and they explain things in plain English instead of trying to confuse you into a bigger invoice. Earned a customer for life.`,
-  }),
-  (b) => ({
-    rating: 3,
-    body: `Service was good but scheduling was a little chaotic — got bumped a day. Once they showed up the work was solid. Would use again with realistic expectations on timing.`,
-  }),
+  () => ({ rating: 5, body: `Called in the morning, they came out by 1pm same day. Fixed it right the first time.` }),
+  () => ({ rating: 5, body: `Honest pricing. Didn't try to upsell me on stuff I didn't need. Will use again.` }),
+  () => ({ rating: 5, body: `Best in the area hands down. Quick, clean, fair. Saving the number for next time.` }),
+  () => ({ rating: 5, body: `Family run business and it shows. They actually care about their work.` }),
+  () => ({ rating: 4, body: `Good work, fair price. Took a day longer than quoted but the result was solid.` }),
+  () => ({ rating: 5, body: `Saved me hundreds compared to the chain shop. Wish I had found them sooner.` }),
+  () => ({ rating: 5, body: `Showed up on time, did exactly what they said, sent the invoice the same day. That's all I need.` }),
+  () => ({ rating: 3, body: `Service was good once they got here but scheduling was a mess. Got pushed back twice.` }),
+  () => ({ rating: 5, body: `Will never use anyone else for this kind of work. Already recommended to my neighbors.` }),
+  () => ({ rating: 4, body: `Reliable. They show up when they say they will, which is rare these days.` }),
 ];
 
 const HEALTH_BEAUTY_TEMPLATES: Template[] = [
-  (b) => ({
-    rating: 5,
-    body: `Best cut I've had in years. They actually listened when I explained what I wanted instead of just doing their default. The salon has a calm, no-upsell vibe — refreshing.`,
-  }),
-  (b) => ({
-    rating: 5,
-    body: `Color came out exactly how I asked, and held longer than the chain places I'd been going to. Booked my next three appointments before I left.`,
-  }),
-  (b) => ({
-    rating: 4,
-    body: `Friendly team, clean space, no pressure to buy anything from the product wall. Will be back. Parking can be a pain depending on the time of day.`,
-  }),
+  () => ({ rating: 5, body: `Best haircut I've had in years!! She actually listened to what I wanted.` }),
+  () => ({ rating: 5, body: `Color came out perfect. Already booked my next appointment.` }),
+  () => ({ rating: 4, body: `Friendly stylists, clean salon. Wish they had more weekend availability but otherwise great.` }),
+  () => ({ rating: 5, body: `My new go-to. No upsell pressure, just good work.` }),
+  () => ({ rating: 5, body: `Walked out feeling like a new person. Worth every dollar.` }),
 ];
 
 const ARTS_TEMPLATES: Template[] = [
-  (b) => ({
-    rating: 5,
-    body: `Quietly one of the best small spaces in ${b.city}. The current show was thought-provoking and the staff were happy to talk about each piece without being pushy.`,
-  }),
-  (b) => ({
-    rating: 5,
-    body: `Such a warm community here. Took a class on a whim and ended up signing up for the full series. Everyone is welcoming regardless of skill level.`,
-  }),
-  (b) => ({
-    rating: 4,
-    body: `Worth going out of your way for. Showcasing real local artists rather than the same posters you see everywhere. Affordable too, which matters.`,
-  }),
+  () => ({ rating: 5, body: `Hidden gem. The current show is incredible — go see it.` }),
+  () => ({ rating: 5, body: `Took a class on a whim and ended up signing up for the whole series. So welcoming.` }),
+  () => ({ rating: 4, body: `Lovely small space. Worth supporting local artists. Hours are limited so check before you go.` }),
+  () => ({ rating: 5, body: `Such a warm community here. Everyone is super encouraging no matter your skill level.` }),
 ];
 
 function templatesFor(b: SampleBusiness): Template[] {
@@ -211,6 +143,18 @@ function templatesFor(b: SampleBusiness): Template[] {
   }
 }
 
+// ─── Owner-response phrasing ───────────────────────────────────────────────
+// Real owner responses are usually short, sometimes awkward, often start
+// with the reviewer's first name. Vary so they don't all read the same.
+
+const OWNER_RESPONSES: Array<(firstName: string) => string> = [
+  (n) => `Thanks ${n}! See you next time.`,
+  (n) => `Hi ${n}, so glad you had a good experience. We appreciate the kind words!`,
+  (n) => `Thank you for the review ${n}. Means a lot to a small business like ours.`,
+  () => `Thank you so much for taking the time to review us!`,
+  (n) => `${n} - thank you! Tell your friends 🙂`,
+];
+
 // ─── Deterministic helpers ──────────────────────────────────────────────────
 // Stable hash so the same business slug always produces the same author /
 // review sequence — re-running the generator doesn't churn the data.
@@ -226,14 +170,15 @@ function pickAuthor(seed: number) {
 }
 
 function pickHelpfulCount(seed: number, rating: number): number {
-  // Higher-rated reviews skew higher on helpful counts.
-  const base = (seed % 18) + (rating === 5 ? 6 : rating === 4 ? 3 : 0);
-  return base;
+  // Most reviews get 0-5 helpful votes; a few 5-star reviews break out.
+  const base = seed % 7;
+  const bonus = rating === 5 && (seed % 5) === 0 ? (seed % 12) + 4 : 0;
+  return base + bonus;
 }
 
 function pickDate(seed: number, offset: number): string {
-  // Spread reviews across the last ~120 days.
-  const daysAgo = ((seed + offset * 31) % 110) + 5;
+  // Spread reviews across the last ~150 days.
+  const daysAgo = ((seed + offset * 31) % 140) + 5;
   const d = new Date();
   d.setDate(d.getDate() - daysAgo);
   d.setHours((seed + offset * 7) % 24, (seed * 13) % 60, 0, 0);
@@ -247,9 +192,19 @@ function reviewsFor(b: SampleBusiness): SampleReview[] {
   const tpls = templatesFor(b);
   const count = 3 + (seed % 3); // 3..5 reviews per business
   const out: SampleReview[] = [];
+  const usedTemplateIdx = new Set<number>();
 
   for (let i = 0; i < count; i++) {
-    const tpl = tpls[(seed + i * 5) % tpls.length];
+    // Step through the templates without repeating until we exhaust.
+    let idx = (seed + i * 5) % tpls.length;
+    let attempts = 0;
+    while (usedTemplateIdx.has(idx) && attempts < tpls.length) {
+      idx = (idx + 1) % tpls.length;
+      attempts++;
+    }
+    usedTemplateIdx.add(idx);
+
+    const tpl = tpls[idx];
     const { body, rating } = tpl(b);
     const author = pickAuthor(seed + i * 11);
 
@@ -265,15 +220,17 @@ function reviewsFor(b: SampleBusiness): SampleReview[] {
     });
   }
 
-  // Add an owner response on roughly 1 in 4 businesses, on the highest-rated review.
+  // Add an owner response on roughly 1 in 4 owner-verified businesses.
   if ((seed % 4) === 0 && b.ownerVerified) {
     const top = out.find((r) => r.rating === 5) ?? out[0];
     if (top) {
       const respondedDays = ((seed % 6) + 1);
       const at = new Date(top.createdAt);
       at.setDate(at.getDate() + respondedDays);
+      const firstName = top.authorName.split(" ")[0];
+      const responseTpl = OWNER_RESPONSES[seed % OWNER_RESPONSES.length];
       top.ownerResponse = {
-        body: `Thank you! Reviews like this are why we love what we do — see you next time.`,
+        body: responseTpl(firstName),
         at: at.toISOString(),
       };
     }
