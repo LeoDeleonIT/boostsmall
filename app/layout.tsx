@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
 import { Nunito, Quicksand } from "next/font/google";
+import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
+import { extractRouterConfig } from "uploadthing/server";
+import { ourFileRouter } from "@/lib/uploadthing";
+import "@uploadthing/react/styles.css";
 import "./globals.css";
 
 // Body + display font — rounded humanist sans, "homey" but readable at all sizes.
@@ -36,7 +40,12 @@ export default function RootLayout({
       lang="en"
       className={`${nunito.variable} ${quicksand.variable} h-full`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {/* Pre-fetches the UploadThing router config so the upload widgets
+            render immediately on first paint instead of waiting for a roundtrip. */}
+        <NextSSRPlugin routerConfig={extractRouterConfig(ourFileRouter)} />
+        {children}
+      </body>
     </html>
   );
 }

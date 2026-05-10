@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { updateBusinessAction } from "@/server/actions/owner";
+import { updateBusinessAction, deletePhotoAction } from "@/server/actions/owner";
+import { BusinessPhotoManager } from "@/components/business/business-photo-manager";
 
 export const metadata: Metadata = {
   title: "Edit business",
@@ -38,6 +39,11 @@ export default async function EditBusinessPage({
       websiteUrl: true,
       instagramHandle: true,
       owners: { select: { userId: true } },
+      photos: {
+        where: { reviewId: null }, // business-level photos only, not review attachments
+        orderBy: { createdAt: "desc" },
+        select: { id: true, url: true, width: true, height: true },
+      },
     },
   });
   if (!business) notFound();
@@ -75,7 +81,18 @@ export default async function EditBusinessPage({
           </p>
         </div>
 
-        <form action={updateBusinessAction} className="mt-8 space-y-6">
+        <section className="mt-10">
+          <p className="text-xs uppercase tracking-widest font-bold text-sage-deep mb-3">
+            Photos
+          </p>
+          <BusinessPhotoManager
+            businessId={business.id}
+            photos={business.photos}
+            onDeletePhoto={deletePhotoAction}
+          />
+        </section>
+
+        <form action={updateBusinessAction} className="mt-10 space-y-6">
           <input type="hidden" name="businessId" value={business.id} />
 
           <div className="space-y-2">

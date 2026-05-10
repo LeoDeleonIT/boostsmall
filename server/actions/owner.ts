@@ -131,3 +131,41 @@ export async function updateBusinessAction(formData: FormData) {
   revalidatePath("/owner/dashboard");
   redirect(`/owner/dashboard?updated=${business.slug}`);
 }
+
+// ─── Delete photo (called from BusinessPhotoManager via client transition) ─
+
+export async function deletePhotoAction(photoId: string) {
+  const session = await auth();
+  if (!session?.user) throw new Error("Sign in required");
+
+  const photo = await db.photo.findUnique({
+    where: { id: photoId },
+    select: { businessId: true, userId: true },
+  });
+  if (!photo) throw new Error("Photo not found");
+
+  // Authorize: photo's uploader OR business owner OR admin
+  const isUploader = photo.userId === session.user.id;
+  const isAdmin = session.user.role === "ADMIN";
+  let isBusinessOwner = false;
+  if (!isUploader && !isAdmin && photo.businessId) {
+    const owner = await db.businessOwner.findFirst({
+      where: { userId: session.user.id, businessId: photo.businessId },
+      select: { id: true },
+    });
+    isBusinessOwner = !!owner;
+  }
+  if (!isUploader && !isAdmin && !isBusinessOwner) {
+    throw new Error("Not allowed");
+  }
+
+  await db.photo.delete({ where: { id: photoId } });
+
+  if (photo.businessId) {
+    const slug = await db.business.findUnique({
+      where: { id: photo.businessId },
+      select: { slug: true },
+    });
+    if (slug) revalidatePath(`/b/${slug.slug}`);
+  }
+}
