@@ -14,7 +14,9 @@ export interface BusinessCardData {
   rating: number;
   reviewCount: number;
   priceTier: 1 | 2 | 3 | 4;
+  /** Pass either a single URL or an array — first is used for the cover. */
   photoUrl?: string;
+  photoUrls?: string[];
   ownerVerified?: boolean;
 }
 
@@ -36,19 +38,22 @@ export function BusinessCard({
       )}
     >
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-ink/5">
-        {business.photoUrl ? (
-          <Image
-            src={business.photoUrl}
-            alt=""
-            fill
-            sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-            className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
-          />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center text-ink-soft text-xs">
-            No photo yet
-          </div>
-        )}
+        {(() => {
+          const cover = business.photoUrl ?? business.photoUrls?.[0];
+          return cover ? (
+            <Image
+              src={cover}
+              alt=""
+              fill
+              sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+              className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center text-ink-soft text-xs">
+              No photo yet
+            </div>
+          );
+        })()}
       </div>
 
       <div className="p-4">
