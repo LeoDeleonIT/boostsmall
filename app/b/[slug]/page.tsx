@@ -21,6 +21,7 @@ import {
   priceLabel,
   relativeTime,
 } from "@/lib/format";
+import { db } from "@/lib/db";
 
 export async function generateMetadata({
   params,
@@ -49,9 +50,25 @@ export default async function BusinessDetailPage({
   const business = findBusinessBySlug(slug);
   if (!business) notFound();
 
+  // Fetch real owner-uploaded photos from the DB. If any exist, prefer them
+  // over the seed mock photoUrls — this is what makes uploads visible here.
+  const dbBusiness = await db.business.findUnique({
+    where: { slug },
+    select: {
+      photos: {
+        where: { reviewId: null },
+        orderBy: { createdAt: "desc" },
+        select: { url: true },
+      },
+    },
+  });
+  const realPhotoUrls = dbBusiness?.photos.map((p) => p.url) ?? [];
+  const photoUrls =
+    realPhotoUrls.length > 0 ? realPhotoUrls : business.photoUrls;
+
   const reviews = reviewsForBusiness(slug);
-  const heroPhoto = business.photoUrls[0];
-  const otherPhotos = business.photoUrls.slice(1, 5);
+  const heroPhoto = photoUrls[0];
+  const otherPhotos = photoUrls.slice(1, 5);
   const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
     `${business.addressLine1}, ${business.city}, ${business.state} ${business.postalCode}`
   )}`;

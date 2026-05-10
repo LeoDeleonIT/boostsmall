@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useState, useTransition } from "react";
 import { UploadButton } from "@/components/uploadthing";
-import { Button } from "@/components/ui/button";
 
 interface PhotoData {
   id: string;
