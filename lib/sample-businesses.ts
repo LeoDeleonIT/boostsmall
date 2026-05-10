@@ -66,12 +66,29 @@ const RETAIL_HOURS = {
 
 // ─── Dental groups (real, family-owned, Leo is the IT for these) ────────────
 // Photos are stock dental-office shots; real owner-uploaded photos take over
-// once the upload flow is built.
+// once the upload flow is built. Each location gets a different cover via
+// rotateCover() below so adjacent listings don't look identical.
 
 const DENTAL_PHOTO_URLS = [
   "https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&w=1600&q=80",
   "https://images.unsplash.com/photo-1606811971618-4486d14f3f99?auto=format&fit=crop&w=1600&q=80",
+  "https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?auto=format&fit=crop&w=1600&q=80",
+  "https://images.unsplash.com/photo-1606265752439-1f18756aa5fc?auto=format&fit=crop&w=1600&q=80",
+  "https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=1600&q=80",
+  "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=1600&q=80",
+  "https://images.unsplash.com/photo-1616391182219-e080b4d1043a?auto=format&fit=crop&w=1600&q=80",
+  "https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=1600&q=80",
 ];
+
+// Rotate which photo is the cover so adjacent locations look distinct.
+// Deterministic: same slug → same cover every render.
+function rotateCover(slug: string, photos: string[]): string[] {
+  if (photos.length <= 1) return photos;
+  let h = 5381;
+  for (let i = 0; i < slug.length; i++) h = ((h << 5) + h + slug.charCodeAt(i)) | 0;
+  const idx = Math.abs(h) % photos.length;
+  return [photos[idx], ...photos.slice(0, idx), ...photos.slice(idx + 1)];
+}
 
 interface DentalLocation {
   loc: string;
@@ -128,8 +145,9 @@ function makeDentalEntry(
   descTemplate: (loc: string) => string,
   t: DentalLocation
 ): SampleBusiness {
+  const slug = dentalSlug(brand, t.loc);
   return {
-    slug: dentalSlug(brand, t.loc),
+    slug,
     name: `${brand} – ${t.loc}`,
     description: descTemplate(t.loc),
     category: "HEALTH_BEAUTY",
@@ -145,7 +163,7 @@ function makeDentalEntry(
     priceTier: 3,
     locationCount,
     hours: DENTAL_HOURS,
-    photoUrls: DENTAL_PHOTO_URLS,
+    photoUrls: rotateCover(slug, DENTAL_PHOTO_URLS),
     rating: t.rating,
     reviewCount: t.reviewCount,
     ownerVerified: true,
@@ -156,7 +174,7 @@ function makeDentalEntry(
 const TRINITY_DENTAL_BUSINESSES: SampleBusiness[] = TRINITY_DENTAL_GROUP.map((t) =>
   makeDentalEntry(
     "Trinity Dental",
-    undefined, // TODO: confirm Trinity website URL
+    "https://www.trinitydentalcenters.com",
     16,
     (loc) =>
       `Family-owned dentistry. The ${loc} office is part of Trinity Dental's network of 16 locations across the Houston metro and East Texas (plus the sister Waller Dental practice).`,
@@ -204,8 +222,117 @@ const ALL_DENTAL_BUSINESSES: SampleBusiness[] = [
   ...PEARL_DENTISTRY_BUSINESSES,
 ];
 
+// ─── Real Houston legacy businesses (added via web research) ────────────────
+// Sources: Preservation Houston Legacy Restaurants 2026, Houstonia Magazine,
+// CultureMap, Yelp listings. All confirmed family-owned / independently held.
+
+const FLORIST_PHOTO_URLS = [
+  "https://images.unsplash.com/photo-1490718720478-364a07a997cd?auto=format&fit=crop&w=1600&q=80",
+  "https://images.unsplash.com/photo-1487530811176-3780de880c2d?auto=format&fit=crop&w=1600&q=80",
+];
+
+const ADDITIONAL_REAL_BUSINESSES: SampleBusiness[] = [
+  {
+    slug: "molinas-cantina-bellaire",
+    name: "Molina's Cantina",
+    description:
+      "Houston's oldest family-owned Tex-Mex, founded 1941. Now run by the third generation of the Molina family.",
+    category: "FOOD_DRINK",
+    subcategory: "Tex-Mex",
+    addressLine1: "3801 Bellaire Blvd",
+    city: "Houston",
+    state: "TX",
+    postalCode: "77025",
+    lat: 29.705438,
+    lng: -95.437684,
+    websiteUrl: "https://www.molinascantina.com",
+    priceTier: 2,
+    locationCount: 3,
+    hours: RESTAURANT_HOURS,
+    photoUrls: [
+      "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1600&q=80",
+    ],
+    rating: 4.5,
+    reviewCount: 1843,
+    ownerVerified: false,
+  },
+  {
+    slug: "niko-nikos-montrose",
+    name: "Niko Niko's – Montrose",
+    description:
+      "Greek and American café in Montrose since 1977. A Houston institution and Preservation Houston's Legacy Restaurant of the Year.",
+    category: "FOOD_DRINK",
+    subcategory: "Greek · Café",
+    addressLine1: "2520 Montrose Blvd",
+    city: "Houston",
+    state: "TX",
+    postalCode: "77006",
+    lat: 29.74654,
+    lng: -95.392214,
+    phone: "+1-713-528-4976",
+    websiteUrl: "https://nikonikos.com",
+    priceTier: 2,
+    locationCount: 2,
+    hours: RESTAURANT_HOURS,
+    photoUrls: [
+      "https://images.unsplash.com/photo-1565557623262-b51c2513a641?auto=format&fit=crop&w=1600&q=80",
+    ],
+    rating: 4.6,
+    reviewCount: 2425,
+    ownerVerified: false,
+    recentlyAdded: true,
+  },
+  {
+    slug: "reynas-florist-east-end",
+    name: "Reyna's Florist",
+    description:
+      "East End florist, family-owned since 1947 — now run by the Ybarra family grandchildren of founder Mary Reyna.",
+    category: "RETAIL",
+    subcategory: "Florist",
+    addressLine1: "903 N 75th St",
+    city: "Houston",
+    state: "TX",
+    postalCode: "77011",
+    lat: 29.73906,
+    lng: -95.289482,
+    phone: "+1-713-926-0315",
+    websiteUrl: "https://www.reynasflorist.com",
+    priceTier: 2,
+    locationCount: 1,
+    hours: RETAIL_HOURS,
+    photoUrls: rotateCover("reynas-florist-east-end", FLORIST_PHOTO_URLS),
+    rating: 4.8,
+    reviewCount: 312,
+    ownerVerified: false,
+    recentlyAdded: true,
+  },
+  {
+    slug: "houstonian-flowery",
+    name: "Houstonian Flowery",
+    description:
+      "West Houston florist on Sam Houston Parkway. Custom arrangements, weddings, and event florals.",
+    category: "RETAIL",
+    subcategory: "Florist",
+    addressLine1: "702 W Sam Houston Pkwy S",
+    city: "Houston",
+    state: "TX",
+    postalCode: "77042",
+    lat: 29.754084,
+    lng: -95.558833,
+    priceTier: 2,
+    locationCount: 1,
+    hours: RETAIL_HOURS,
+    photoUrls: rotateCover("houstonian-flowery", FLORIST_PHOTO_URLS),
+    rating: 4.7,
+    reviewCount: 32,
+    ownerVerified: false,
+    recentlyAdded: true,
+  },
+];
+
 export const SAMPLE_BUSINESSES: SampleBusiness[] = [
   ...ALL_DENTAL_BUSINESSES,
+  ...ADDITIONAL_REAL_BUSINESSES,
   {
     slug: "bangkok-social-houston",
     name: "Bangkok Social",
