@@ -928,7 +928,7 @@ const ADDITIONAL_REAL_BUSINESSES: SampleBusiness[] = [
     slug: "family-auto-center-normandy",
     name: "Family Auto Center",
     description:
-      "Family-owned auto repair on Normandy serving the East side of Houston for 30+ years. Honest mechanics, no upsell.",
+      "Family-owned independent auto repair on Normandy — a NAPA AutoCare network member, ASE-certified, serving the East side of Houston for 30+ years. Honest mechanics, no upsell.",
     category: "SERVICES",
     subcategory: "Auto repair · Mechanic",
     addressLine1: "780 Normandy St",
