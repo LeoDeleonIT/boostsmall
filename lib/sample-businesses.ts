@@ -64,61 +64,148 @@ const RETAIL_HOURS = {
   sun: [{ open: "12:00", close: "17:00" }],
 };
 
+// ─── Dental groups (real, family-owned, Leo is the IT for these) ────────────
+// Photos are stock dental-office shots; real owner-uploaded photos take over
+// once the upload flow is built.
+
+const DENTAL_PHOTO_URLS = [
+  "https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&w=1600&q=80",
+  "https://images.unsplash.com/photo-1606811971618-4486d14f3f99?auto=format&fit=crop&w=1600&q=80",
+];
+
+interface DentalLocation {
+  loc: string;
+  addressLine1: string;
+  city: string;
+  postalCode: string;
+  phone: string;
+  lat: number;
+  lng: number;
+  rating: number;
+  reviewCount: number;
+  recentlyAdded?: boolean;
+}
+
+const TRINITY_DENTAL_GROUP: DentalLocation[] = [
+  { loc: "Aldine",         addressLine1: "11939 Eastex Fwy",                    city: "Houston",    postalCode: "77039", phone: "+1-281-816-4825", lat: 29.89876,  lng: -95.314838, rating: 4.7, reviewCount: 142, recentlyAdded: true },
+  { loc: "Channelview",    addressLine1: "5815 East Sam Houston Pkwy N",        city: "Houston",    postalCode: "77049", phone: "+1-281-303-5096", lat: 29.809783, lng: -95.164523, rating: 4.6, reviewCount: 98 },
+  { loc: "Cleveland",      addressLine1: "106 Truly Plaza",                     city: "Cleveland",  postalCode: "77327", phone: "+1-281-746-6564", lat: 30.334627, lng: -95.095409, rating: 4.8, reviewCount: 67 },
+  { loc: "Conroe",         addressLine1: "1304 W Davis Suite A",                city: "Conroe",     postalCode: "77304", phone: "+1-936-209-1548", lat: 30.317193, lng: -95.473321, rating: 4.7, reviewCount: 124 },
+  { loc: "Crosby",         addressLine1: "14045 FM 2100 #250",                  city: "Crosby",     postalCode: "77532", phone: "+1-281-942-4167", lat: 29.892935, lng: -95.064645, rating: 4.5, reviewCount: 56 },
+  { loc: "Denver Harbor",  addressLine1: "7008 Lyons Ave",                      city: "Houston",    postalCode: "77020", phone: "+1-713-766-0943", lat: 29.77635,  lng: -95.299925, rating: 4.6, reviewCount: 89 },
+  { loc: "Humble",         addressLine1: "9455 North Sam Houston Pkwy E #600",  city: "Humble",     postalCode: "77396", phone: "+1-281-335-3630", lat: 29.935564, lng: -95.250205, rating: 4.8, reviewCount: 178 },
+  { loc: "Katy",           addressLine1: "24020 Clay Rd Suite 106",             city: "Katy",       postalCode: "77493", phone: "+1-832-400-4129", lat: 29.832136, lng: -95.791511, rating: 4.9, reviewCount: 203, recentlyAdded: true },
+  { loc: "Livingston",     addressLine1: "1601 US Highway 59 N Loop Suite 400", city: "Livingston", postalCode: "77351", phone: "+1-936-463-0405", lat: 30.728965, lng: -94.940576, rating: 4.6, reviewCount: 41 },
+  { loc: "Magnolia",       addressLine1: "18640 Farm to Market Rd 1488 Ste D",  city: "Magnolia",   postalCode: "77354", phone: "+1-832-379-5488", lat: 30.212435, lng: -95.754076, rating: 4.7, reviewCount: 88 },
+  { loc: "Normandy",       addressLine1: "503 Maxey Rd",                        city: "Houston",    postalCode: "77013", phone: "+1-832-358-3710", lat: 29.786032, lng: -95.218203, rating: 4.5, reviewCount: 61 },
+  { loc: "Porter",         addressLine1: "23762 US-59",                         city: "Porter",     postalCode: "77365", phone: "+1-281-306-5194", lat: 30.10141,  lng: -95.238177, rating: 4.7, reviewCount: 73 },
+  { loc: "Rosenberg",      addressLine1: "1636 Minonite Road Suite 500",        city: "Rosenberg",  postalCode: "77469", phone: "+1-832-847-7252", lat: 29.525632, lng: -95.752339, rating: 4.6, reviewCount: 95 },
+  { loc: "Sawyer Heights", addressLine1: "1919 Taylor St #3A",                  city: "Houston",    postalCode: "77007", phone: "+1-713-766-4389", lat: 29.775543, lng: -95.383428, rating: 4.8, reviewCount: 167 },
+  { loc: "Tomball",        addressLine1: "14215 Farm to Market 2920 #103",      city: "Tomball",    postalCode: "77377", phone: "+1-832-956-1308", lat: 30.088479, lng: -95.638269, rating: 4.7, reviewCount: 109 },
+  { loc: "Sealy",          addressLine1: "2303 TX-36 Suite C",                  city: "Sealy",      postalCode: "77474", phone: "+1-979-315-4084", lat: 29.760807, lng: -96.150459, rating: 4.5, reviewCount: 38 },
+];
+
+const PEARL_DENTISTRY_GROUP: DentalLocation[] = [
+  { loc: "Houston Heights", addressLine1: "1919 Taylor St",                  city: "Houston", postalCode: "77007", phone: "+1-713-766-4389", lat: 29.775543, lng: -95.383428, rating: 4.8, reviewCount: 134, recentlyAdded: true },
+  { loc: "Humble",          addressLine1: "11501 N Sam Houston Pkwy Ste C",  city: "Humble",  postalCode: "77396", phone: "+1-346-476-0627", lat: 29.935237, lng: -95.215203, rating: 4.7, reviewCount: 87,  recentlyAdded: true },
+];
+
+function dentalSlug(brand: string, loc: string): string {
+  const norm = (s: string) =>
+    s
+      .toLowerCase()
+      .normalize("NFKD")
+      .replace(/[̀-ͯ]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "");
+  return `${norm(brand)}-${norm(loc)}`;
+}
+
+function makeDentalEntry(
+  brand: string,
+  websiteUrl: string | undefined,
+  locationCount: number,
+  descTemplate: (loc: string) => string,
+  t: DentalLocation
+): SampleBusiness {
+  return {
+    slug: dentalSlug(brand, t.loc),
+    name: `${brand} – ${t.loc}`,
+    description: descTemplate(t.loc),
+    category: "HEALTH_BEAUTY",
+    subcategory: "Dentist",
+    addressLine1: t.addressLine1,
+    city: t.city,
+    state: "TX",
+    postalCode: t.postalCode,
+    lat: t.lat,
+    lng: t.lng,
+    phone: t.phone,
+    websiteUrl,
+    priceTier: 3,
+    locationCount,
+    hours: DENTAL_HOURS,
+    photoUrls: DENTAL_PHOTO_URLS,
+    rating: t.rating,
+    reviewCount: t.reviewCount,
+    ownerVerified: true,
+    recentlyAdded: t.recentlyAdded,
+  };
+}
+
+const TRINITY_DENTAL_BUSINESSES: SampleBusiness[] = TRINITY_DENTAL_GROUP.map((t) =>
+  makeDentalEntry(
+    "Trinity Dental",
+    undefined, // TODO: confirm Trinity website URL
+    16,
+    (loc) =>
+      `Family-owned dentistry. The ${loc} office is part of Trinity Dental's network of 16 locations across the Houston metro and East Texas (plus the sister Waller Dental practice).`,
+    t
+  )
+);
+
+const PEARL_DENTISTRY_BUSINESSES: SampleBusiness[] = PEARL_DENTISTRY_GROUP.map((t) =>
+  makeDentalEntry(
+    "Pearl Dentistry",
+    "https://pearlmoderndentistry.com",
+    2,
+    (loc) =>
+      `Modern family-owned dentistry. The ${loc} office is one of two Pearl Dentistry locations in the Houston metro.`,
+    t
+  )
+);
+
+const WALLER_DENTAL_BUSINESS: SampleBusiness = {
+  slug: "waller-dental",
+  name: "Waller Dental",
+  description:
+    "Family-owned dentistry serving Waller and surrounding communities. Sister practice to Trinity Dental.",
+  category: "HEALTH_BEAUTY",
+  subcategory: "Dentist",
+  addressLine1: "31315 FM 2920 Rd Ste 16A",
+  city: "Waller",
+  state: "TX",
+  postalCode: "77484",
+  lat: 30.05686,
+  lng: -95.91384,
+  phone: "+1-936-372-2673",
+  priceTier: 3,
+  locationCount: 1,
+  hours: DENTAL_HOURS,
+  photoUrls: DENTAL_PHOTO_URLS,
+  rating: 4.7,
+  reviewCount: 52,
+  ownerVerified: true,
+};
+
+const ALL_DENTAL_BUSINESSES: SampleBusiness[] = [
+  ...TRINITY_DENTAL_BUSINESSES,
+  WALLER_DENTAL_BUSINESS,
+  ...PEARL_DENTISTRY_BUSINESSES,
+];
+
 export const SAMPLE_BUSINESSES: SampleBusiness[] = [
-  {
-    slug: "trinity-dental-houston",
-    name: "Trinity Dental",
-    description: "General and family dentistry. Accepting new patients.",
-    category: "HEALTH_BEAUTY",
-    subcategory: "Dentist",
-    addressLine1: "TODO: confirm address with Leo",
-    city: "Houston",
-    state: "TX",
-    postalCode: "77000",
-    lat: 29.7604,
-    lng: -95.3698,
-    phone: "+1-713-000-0000",
-    websiteUrl: "https://example-trinity.com",
-    priceTier: 3,
-    locationCount: 1,
-    hours: DENTAL_HOURS,
-    photoUrls: [
-      "https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&w=1600&q=80",
-      "https://images.unsplash.com/photo-1606811971618-4486d14f3f99?auto=format&fit=crop&w=1600&q=80",
-    ],
-    rating: 4.8,
-    reviewCount: 142,
-    ownerVerified: true,
-    needsReview: "Confirm exact branch address, phone, website with Leo",
-    recentlyAdded: true,
-  },
-  {
-    slug: "pearl-dentistry-katy",
-    name: "Pearl Dentistry",
-    description:
-      "Family dentistry serving the Katy area. Saturday appointments available.",
-    category: "HEALTH_BEAUTY",
-    subcategory: "Dentist",
-    addressLine1: "TODO: confirm address with Leo",
-    city: "Katy",
-    state: "TX",
-    postalCode: "77449",
-    lat: 29.7858,
-    lng: -95.8245,
-    phone: "+1-281-000-0000",
-    websiteUrl: "https://example-pearl.com",
-    priceTier: 3,
-    locationCount: 1,
-    hours: DENTAL_HOURS,
-    photoUrls: [
-      "https://images.unsplash.com/photo-1606811971618-4486d14f3f99?auto=format&fit=crop&w=1600&q=80",
-    ],
-    rating: 4.9,
-    reviewCount: 87,
-    ownerVerified: true,
-    needsReview: "Confirm exact branch address, phone, website with Leo",
-    recentlyAdded: true,
-  },
+  ...ALL_DENTAL_BUSINESSES,
   {
     slug: "bangkok-social-houston",
     name: "Bangkok Social",

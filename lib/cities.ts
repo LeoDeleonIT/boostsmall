@@ -23,6 +23,16 @@ export const HOUSTON_METRO: CityOption[] = [
   { city: "Tomball", state: "TX" },
   { city: "Conroe", state: "TX" },
   { city: "Galveston", state: "TX" },
+  // East Texas / outer-ring cities (added when Trinity Dental's coverage area
+  // was seeded — they're outside the strict Houston metro but locally meaningful).
+  { city: "Cleveland", state: "TX" },
+  { city: "Crosby", state: "TX" },
+  { city: "Livingston", state: "TX" },
+  { city: "Magnolia", state: "TX" },
+  { city: "Porter", state: "TX" },
+  { city: "Rosenberg", state: "TX" },
+  { city: "Sealy", state: "TX" },
+  { city: "Waller", state: "TX" },
 ];
 
 export function isHoustonMetro(city: string): boolean {

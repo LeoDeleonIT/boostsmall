@@ -4,23 +4,25 @@ import { normalizeName, levenshtein } from "@/lib/normalize";
 
 export { normalizeName, levenshtein };
 
-const MAX_LOCATIONS_ALLOWED = 5;
-const FUZZY_THRESHOLD = 2; // Levenshtein distance ≤ 2 → route to moderation
+// We deliberately removed the "≤5 locations" auto-reject. The real filter
+// is family-owned vs. publicly-traded chain — a 17-location regional
+// family-owned dental group is welcome here; a 6-location franchise of a
+// publicly-traded restaurant brand is not. Multi-location submissions
+// still flow through moderation (REVIEW path), where the admin decides.
+const FUZZY_THRESHOLD = 2;
+const MULTI_LOCATION_REVIEW_THRESHOLD = 5; // > 5 → moderation review
 
 export type ChainCheckResult =
   | { allowed: true; warnings: string[] }
-  | { allowed: false; reason: "EXACT_BLOCKLIST" | "TOO_MANY_LOCATIONS" | "DOMAIN_MATCH"; matched?: string }
-  | { allowed: "REVIEW"; reason: "FUZZY_MATCH"; matched: string; distance: number };
+  | { allowed: false; reason: "EXACT_BLOCKLIST" | "DOMAIN_MATCH"; matched?: string }
+  | { allowed: "REVIEW"; reason: "FUZZY_MATCH" | "MULTI_LOCATION"; matched?: string; distance?: number };
 
 export async function checkBusinessAgainstChains(input: {
   name: string;
   websiteUrl?: string | null;
   locationCount: number;
 }): Promise<ChainCheckResult> {
-  if (input.locationCount > MAX_LOCATIONS_ALLOWED) {
-    return { allowed: false, reason: "TOO_MANY_LOCATIONS" };
-  }
-
+  const warnings: string[] = [];
   const normalized = normalizeName(input.name);
 
   // 1. Exact match
@@ -52,7 +54,6 @@ export async function checkBusinessAgainstChains(input: {
   const all = await db.chainBlocklist.findMany({
     select: { name: true, normalizedName: true },
   });
-  const warnings: string[] = [];
   for (const entry of all) {
     const distance = levenshtein(normalized, entry.normalizedName);
     if (distance > 0 && distance <= FUZZY_THRESHOLD) {
@@ -63,6 +64,12 @@ export async function checkBusinessAgainstChains(input: {
         distance,
       };
     }
+  }
+
+  // 4. Multi-location → moderation (NOT auto-reject). Family-owned
+  //    multi-location businesses are welcome; the admin reviews to be sure.
+  if (input.locationCount > MULTI_LOCATION_REVIEW_THRESHOLD) {
+    return { allowed: "REVIEW", reason: "MULTI_LOCATION" };
   }
 
   return { allowed: true, warnings };

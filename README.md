@@ -102,4 +102,11 @@ See `.env.example`. Everything goes in `.env.local` for development; mirror to V
 
 ## Why no chains?
 
-A business is allowed if it's independently owned, operating in 5 or fewer physical locations, not publicly traded or majority-owned by a publicly-traded parent, and not on the chain blocklist (`prisma/seed-chains.ts`). Submissions are checked at three layers: blocklist match, location-count threshold, and human moderation.
+A business is allowed if it is **family-owned or independently held**, **not publicly traded** or majority-owned by a publicly-traded parent, and **not on the chain blocklist** (`prisma/seed-chains.ts`).
+
+Submissions are checked at three layers:
+1. **Exact blocklist match** → auto-reject (McDonald's, Starbucks, etc.)
+2. **Domain or fuzzy match against the blocklist** → routed to moderation
+3. **Multi-location (>5 locations)** → routed to moderation, NOT auto-rejected
+
+We deliberately do **not** auto-reject based on location count alone. The original brief had a hard "≤5 locations" rule, but that filtered out exactly the kind of regional family-owned business the platform exists to celebrate (e.g. a 16-location regional family-owned dental group). The real distinction is **family-owned vs. publicly-traded chain**, not size — so multi-location submissions go to a human moderator (you, as ADMIN) who has the context to decide.
