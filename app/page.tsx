@@ -2,6 +2,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { Wordmark } from "@/components/wordmark";
 import { Button } from "@/components/ui/button";
+import { BusinessCard } from "@/components/business/business-card";
+import { topRated, recentlyAdded } from "@/lib/sample-businesses";
 import {
   ChevronDown,
   Search,
@@ -148,21 +150,41 @@ export default function HomePage() {
             dentists, plumbers, bookstores, salons, and more. No chains.
           </p>
 
-          <div className="mt-10 flex flex-wrap items-center gap-3">
-            <Button variant="warm" size="pill" asChild>
-              <Link href="/search">
-                <Search />
-                Find a local favorite
+          {/* Search bar - prominent over the photo */}
+          <form
+            action="/search"
+            className="mt-10 flex flex-col sm:flex-row gap-2 max-w-2xl"
+          >
+            <div className="flex-1 flex items-center rounded-full bg-white px-5 py-3 shadow-lg">
+              <Search size={20} />
+              <input
+                type="text"
+                name="q"
+                placeholder="Coffee, dentist, bike repair…"
+                className="ml-3 flex-1 bg-transparent text-base text-ink placeholder:text-ink-soft/60 focus:outline-none"
+              />
+            </div>
+            <Button variant="warm" size="pill" type="submit" className="shrink-0">
+              Search
+            </Button>
+          </form>
+
+          <div className="mt-5 flex flex-wrap items-center gap-2 text-sm">
+            <span className="text-white/80">Try:</span>
+            {[
+              { q: "thai", label: "Thai food" },
+              { q: "dentist", label: "Dentists" },
+              { q: "bookstore", label: "Bookstores" },
+              { q: "bike", label: "Bike repair" },
+            ].map((s) => (
+              <Link
+                key={s.q}
+                href={`/search?q=${s.q}`}
+                className="rounded-full bg-white/15 text-white/95 px-3 py-1 backdrop-blur-sm hover:bg-white/25"
+              >
+                {s.label}
               </Link>
-            </Button>
-            <Button
-              variant="outline"
-              size="pill"
-              className="bg-white/10 text-white border-white/30 hover:bg-white/20 backdrop-blur-sm"
-              asChild
-            >
-              <Link href="/submit">Add a business</Link>
-            </Button>
+            ))}
           </div>
         </div>
 
@@ -209,6 +231,62 @@ export default function HomePage() {
                   </p>
                 </div>
               </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── RECENTLY ADDED ──────────────────────────────────────────────── */}
+      <section className="bg-background">
+        <div className="mx-auto max-w-[1400px] px-6 py-16 md:py-20">
+          <div className="flex items-end justify-between gap-6 mb-8">
+            <div>
+              <p className="text-xs uppercase tracking-[0.16em] text-terracotta-deep font-bold mb-2">
+                New to boostsmall
+              </p>
+              <h2 className="font-display text-ink text-3xl md:text-4xl leading-tight">
+                Recently added
+              </h2>
+            </div>
+            <Link
+              href="/search?sort=newest"
+              className="text-sm font-bold text-terracotta-deep hover:underline underline-offset-4 shrink-0"
+            >
+              See all →
+            </Link>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {recentlyAdded(6).map((b) => (
+              <BusinessCard key={b.slug} business={b} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── TOP RATED ───────────────────────────────────────────────────── */}
+      <section className="bg-background-soft border-y border-border">
+        <div className="mx-auto max-w-[1400px] px-6 py-16 md:py-20">
+          <div className="flex items-end justify-between gap-6 mb-8">
+            <div>
+              <p className="text-xs uppercase tracking-[0.16em] text-sage-deep font-bold mb-2">
+                Top rated this month
+              </p>
+              <h2 className="font-display text-ink text-3xl md:text-4xl leading-tight">
+                Loved by neighbors
+              </h2>
+            </div>
+            <Link
+              href="/search?sort=rating"
+              className="text-sm font-bold text-sage-deep hover:underline underline-offset-4 shrink-0"
+            >
+              See all →
+            </Link>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {topRated(6).map((b) => (
+              <BusinessCard key={b.slug} business={b} />
             ))}
           </div>
         </div>
