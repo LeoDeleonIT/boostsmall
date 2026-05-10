@@ -796,6 +796,85 @@ const ADDITIONAL_REAL_BUSINESSES: SampleBusiness[] = [
     recentlyAdded: true,
   },
 
+  // ─── More bakery / French ─────────────────────────────────────────────────
+  {
+    slug: "french-gourmet-bakery-river-oaks",
+    name: "French Gourmet Bakery",
+    description:
+      "Houston bakery on Westheimer doing French and American style desserts since 1973. Wedding cakes, croissants, the works.",
+    category: "FOOD_DRINK",
+    subcategory: "Bakery · French",
+    addressLine1: "2250 Westheimer Rd",
+    city: "Houston",
+    state: "TX",
+    postalCode: "77098",
+    lat: 29.74281,
+    lng: -95.414962,
+    phone: "+1-713-524-3744",
+    websiteUrl: "https://www.fgbakery.com",
+    priceTier: 2,
+    locationCount: 1,
+    hours: RETAIL_HOURS,
+    photoUrls: [
+      "https://images.unsplash.com/photo-1486427944299-d1955d23e34d?auto=format&fit=crop&w=1600&q=80",
+      "https://images.unsplash.com/photo-1517433670267-08bbd4be890f?auto=format&fit=crop&w=1600&q=80",
+    ],
+    rating: 4.5,
+    reviewCount: 152,
+    ownerVerified: false,
+  },
+
+  // ─── Auto / mechanic ──────────────────────────────────────────────────────
+  {
+    slug: "family-auto-center-normandy",
+    name: "Family Auto Center",
+    description:
+      "Family-owned auto repair on Normandy serving the East side of Houston for 30+ years. Honest mechanics, no upsell.",
+    category: "SERVICES",
+    subcategory: "Auto repair · Mechanic",
+    addressLine1: "780 Normandy St",
+    city: "Houston",
+    state: "TX",
+    postalCode: "77015",
+    lat: 29.782733,
+    lng: -95.205313,
+    phone: "+1-713-450-2759",
+    websiteUrl: "https://www.familyautocenterhouston.com",
+    priceTier: 2,
+    locationCount: 1,
+    photoUrls: [
+      "https://images.unsplash.com/photo-1486006920555-c77dcf18193c?auto=format&fit=crop&w=1600&q=80",
+    ],
+    rating: 4.7,
+    reviewCount: 73,
+    ownerVerified: false,
+  },
+
+  // ─── Yoga ─────────────────────────────────────────────────────────────────
+  {
+    slug: "joy-yoga-center-heights",
+    name: "Joy Yoga Center",
+    description:
+      "Heights yoga studio on Washington Ave. Voted Best Yoga Studio in Houston multiple years. Welcoming for all levels.",
+    category: "HEALTH_BEAUTY",
+    subcategory: "Yoga studio",
+    addressLine1: "4500 Washington Ave",
+    city: "Houston",
+    state: "TX",
+    postalCode: "77007",
+    lat: 29.770779,
+    lng: -95.406603,
+    phone: "+1-713-886-9642",
+    priceTier: 2,
+    locationCount: 1,
+    photoUrls: [
+      "https://images.unsplash.com/photo-1518049362265-d5b2a6467637?auto=format&fit=crop&w=1600&q=80",
+    ],
+    rating: 4.8,
+    reviewCount: 98,
+    ownerVerified: false,
+  },
+
   // ─── Italian ──────────────────────────────────────────────────────────────
   {
     slug: "da-marco-montrose",
