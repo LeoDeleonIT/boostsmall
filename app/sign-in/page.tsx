@@ -1,17 +1,39 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Wordmark } from "@/components/wordmark";
+import { signIn } from "@/lib/auth";
 
 export const metadata: Metadata = {
   title: "Sign in",
 };
 
-export default function SignInPage() {
+async function emailSignIn(formData: FormData) {
+  "use server";
+  const emailRaw = formData.get("email");
+  const email = typeof emailRaw === "string" ? emailRaw.trim() : "";
+  if (!email) {
+    redirect("/sign-in?error=missing-email");
+  }
+  // signIn redirects on success (to verifyRequest page).
+  // Errors are propagated as redirect search params.
+  await signIn("resend", {
+    email,
+    redirectTo: "/",
+  });
+}
+
+export default async function SignInPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const { error } = await searchParams;
   return (
     <main className="min-h-screen flex flex-col bg-background">
       <SiteHeader showSearch={false} />
@@ -33,6 +55,7 @@ export default function SignInPage() {
               className="w-full justify-center"
               type="button"
               disabled
+              title="Configure GOOGLE_CLIENT_* in .env.local to enable"
             >
               <GoogleMark />
               Continue with Google
@@ -49,7 +72,7 @@ export default function SignInPage() {
               </div>
             </div>
 
-            <form action="/sign-in/check-email" method="get" className="space-y-4">
+            <form action={emailSignIn} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -61,6 +84,13 @@ export default function SignInPage() {
                   autoComplete="email"
                 />
               </div>
+
+              {error && (
+                <p className="text-sm text-terracotta-deep bg-terracotta/10 rounded-lg px-3 py-2">
+                  {errorMessage(error)}
+                </p>
+              )}
+
               <Button type="submit" variant="warm" size="lg" className="w-full">
                 Email me a sign-in link
               </Button>
@@ -79,18 +109,25 @@ export default function SignInPage() {
             </Link>
             .
           </p>
-
-          <p className="mt-3 text-center text-[11px] text-ink-soft/70">
-            Auth wiring needs DATABASE_URL + RESEND_API_KEY + GOOGLE_CLIENT_*
-            in <code>.env.local</code>. Once those land, this form actually
-            sends.
-          </p>
         </div>
       </section>
 
       <SiteFooter />
     </main>
   );
+}
+
+function errorMessage(code: string) {
+  switch (code) {
+    case "missing-email":
+      return "Please enter your email.";
+    case "EmailSignin":
+      return "We couldn't send the email. Try again in a minute.";
+    case "Verification":
+      return "That sign-in link expired or was already used. Request a fresh one.";
+    default:
+      return "Something went wrong. Try again.";
+  }
 }
 
 function GoogleMark() {

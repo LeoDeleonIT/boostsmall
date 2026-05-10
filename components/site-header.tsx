@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Wordmark } from "@/components/wordmark";
 import { Button } from "@/components/ui/button";
+import { UserNav } from "@/components/user-nav";
 import { Search } from "@/components/icons";
 
 const NAV_ITEMS = [
@@ -16,7 +17,7 @@ interface SiteHeaderProps {
   showSearch?: boolean;
 }
 
-export function SiteHeader({
+export async function SiteHeader({
   variant = "solid",
   showSearch = true,
 }: SiteHeaderProps) {
@@ -72,22 +73,7 @@ export function SiteHeader({
           ))}
         </nav>
 
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            asChild
-            className={
-              isSolid
-                ? ""
-                : "text-white hover:bg-white/10 font-semibold"
-            }
-          >
-            <Link href="/sign-in">Sign in</Link>
-          </Button>
-          <Button variant="warm" className="hidden sm:inline-flex" asChild>
-            <Link href="/sign-in">Join</Link>
-          </Button>
-        </div>
+        <UserNav variant={isSolid ? "light" : "dark"} />
       </div>
     </header>
   );

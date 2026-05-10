@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Wordmark } from "@/components/wordmark";
 import { Button } from "@/components/ui/button";
 import { BusinessCard } from "@/components/business/business-card";
+import { UserNav } from "@/components/user-nav";
 import { topRated, recentlyAdded } from "@/lib/sample-businesses";
 import {
   ChevronDown,
@@ -119,18 +120,7 @@ export default function HomePage() {
               ))}
             </nav>
 
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                className="text-white hover:bg-white/10 font-semibold"
-                asChild
-              >
-                <Link href="/sign-in">Sign in</Link>
-              </Button>
-              <Button variant="warm" className="hidden sm:inline-flex" asChild>
-                <Link href="/sign-in">Join boostsmall</Link>
-              </Button>
-            </div>
+            <UserNav variant="dark" />
           </div>
         </header>
 
