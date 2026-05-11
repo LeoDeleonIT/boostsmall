@@ -132,6 +132,7 @@ export function ResultsMap({
       for (const p of pins) {
         const el = document.createElement("div");
         el.setAttribute("aria-label", p.name);
+        el.dataset.slug = p.slug;
         el.style.cssText = [
           "width: 24px",
           "height: 24px",
@@ -140,13 +141,20 @@ export function ResultsMap({
           "border: 3px solid white",
           "box-shadow: 0 2px 8px rgba(168, 94, 63, 0.4)",
           "cursor: pointer",
-          "transition: transform 120ms",
+          "transition: transform 120ms, background-color 120ms, box-shadow 120ms",
         ].join(";");
         el.addEventListener("mouseenter", () => {
           el.style.transform = "scale(1.2)";
         });
         el.addEventListener("mouseleave", () => {
-          el.style.transform = "scale(1)";
+          if (el.dataset.active !== "true") el.style.transform = "scale(1)";
+        });
+        // Click → tell the list side to scroll the matching card into view.
+        // We don't preventDefault — Mapbox still opens the popup as usual.
+        el.addEventListener("click", () => {
+          window.dispatchEvent(
+            new CustomEvent("bs:pin-click", { detail: { slug: p.slug } })
+          );
         });
         const marker = new mapboxgl.Marker(el).setLngLat([p.lng, p.lat]).addTo(map);
         marker.setPopup(
@@ -176,6 +184,56 @@ export function ResultsMap({
     userLocation?.lng,
     radiusMiles,
   ]);
+
+  // Effect 3: respond to `bs:hover-card` from the list side. Looks up the
+  // pin DOM node by data-slug and toggles a stronger highlight style.
+  useEffect(() => {
+    const findPin = (slug: string): HTMLDivElement | null =>
+      (containerRef.current?.querySelector(
+        `.mapboxgl-marker [data-slug="${CSS.escape(slug)}"]`
+      ) as HTMLDivElement | null) ??
+      (containerRef.current?.querySelector(
+        `[data-slug="${CSS.escape(slug)}"]`
+      ) as HTMLDivElement | null);
+
+    const onHover = (e: Event) => {
+      const slug = (e as CustomEvent<{ slug: string }>).detail?.slug;
+      if (!slug) return;
+      const el = findPin(slug);
+      if (!el) return;
+      el.dataset.active = "true";
+      el.style.transform = "scale(1.45)";
+      el.style.background = "#a85e3f";
+      el.style.boxShadow = "0 4px 14px rgba(168, 94, 63, 0.6)";
+      el.style.zIndex = "10";
+    };
+    const onLeave = (e: Event) => {
+      const slug = (e as CustomEvent<{ slug: string }>).detail?.slug;
+      const reset = (el: HTMLDivElement) => {
+        delete el.dataset.active;
+        el.style.transform = "scale(1)";
+        el.style.background = "#c97b5a";
+        el.style.boxShadow = "0 2px 8px rgba(168, 94, 63, 0.4)";
+        el.style.zIndex = "";
+      };
+      if (slug) {
+        const el = findPin(slug);
+        if (el) reset(el);
+      } else {
+        // No slug: clear all
+        containerRef.current
+          ?.querySelectorAll<HTMLDivElement>('[data-active="true"]')
+          .forEach(reset);
+      }
+    };
+
+    window.addEventListener("bs:hover-card", onHover);
+    window.addEventListener("bs:leave-card", onLeave);
+    return () => {
+      window.removeEventListener("bs:hover-card", onHover);
+      window.removeEventListener("bs:leave-card", onLeave);
+    };
+  }, []);
 
   return <div ref={containerRef} className={className} />;
 }

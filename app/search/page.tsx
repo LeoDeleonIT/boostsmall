@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { BusinessCard } from "@/components/business/business-card";
 import { MapPin, Search } from "@/components/icons";
 import { ResultsMap } from "@/components/search/results-map";
+import { SearchInteractions } from "@/components/search/search-interactions";
 import { SAMPLE_BUSINESSES, type Category } from "@/lib/sample-businesses";
 import { categoryLabel, priceLabel } from "@/lib/format";
 import { HOUSTON_METRO } from "@/lib/cities";
@@ -127,6 +128,7 @@ export default async function SearchPage({
 
   return (
     <main className="min-h-screen flex flex-col bg-background">
+      <SearchInteractions />
       <SiteHeader />
 
       {/* SEARCH BAR */}

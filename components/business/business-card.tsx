@@ -32,8 +32,12 @@ export function BusinessCard({
   return (
     <Link
       href={`/b/${business.slug}`}
+      data-business-slug={business.slug}
       className={cn(
-        "group block rounded-lg border border-border bg-surface overflow-hidden transition-colors hover:border-border-strong",
+        "group block rounded-lg border border-border bg-surface overflow-hidden transition-all hover:border-border-strong",
+        // `data-[map-active]` is toggled by SearchInteractions when a map pin
+        // is clicked — keep it in sync if you change the highlight style.
+        "data-[map-active=true]:ring-2 data-[map-active=true]:ring-terracotta data-[map-active=true]:border-terracotta",
         className
       )}
     >
