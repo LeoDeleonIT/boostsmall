@@ -77,6 +77,73 @@ export async function sendBusinessRejectedEmail(args: BusinessRejectedArgs) {
   });
 }
 
+interface NewReviewArgs extends BaseSendArgs {
+  businessName: string;
+  businessSlug: string;
+  reviewId: string;
+  rating: number;
+  reviewerName: string;
+  bodyExcerpt: string;
+}
+
+// Sent to verified owners when a new review lands on their business.
+export async function sendNewReviewEmail(args: NewReviewArgs) {
+  const subject = `New ${args.rating}★ review on ${args.businessName}`;
+  const url = `${APP_URL}/b/${args.businessSlug}#review-${args.reviewId}`;
+  const greeting = args.toName ? `Hi ${args.toName},` : "Hi,";
+  const stars = "★".repeat(args.rating) + "☆".repeat(5 - args.rating);
+
+  return safeSend({
+    to: args.to,
+    subject,
+    html: layout({
+      headline: `${args.rating}★ on ${args.businessName}.`,
+      body: `
+        <p>${greeting}</p>
+        <p><strong>${escapeHtml(args.reviewerName)}</strong> just left a ${stars} review on <strong>${escapeHtml(args.businessName)}</strong>.</p>
+        <blockquote style="margin:18px 0;padding:14px 16px;border-left:3px solid #c97b5a;background:#faf5e8;color:#2c2a25;font-style:italic;font-size:15px;line-height:1.5;">
+          ${escapeHtml(args.bodyExcerpt)}
+        </blockquote>
+        <p>You can respond directly from the review.</p>
+      `,
+      ctaLabel: "Read it & respond",
+      ctaUrl: url,
+      footerNote: "You're getting this because you're a verified owner of this business on boostsmall.",
+    }),
+  });
+}
+
+interface OwnerResponseEmailArgs extends BaseSendArgs {
+  businessName: string;
+  businessSlug: string;
+  reviewId: string;
+  ownerExcerpt: string;
+}
+
+// Sent to a reviewer when the owner responds to their review.
+export async function sendOwnerResponseEmail(args: OwnerResponseEmailArgs) {
+  const subject = `${args.businessName} replied to your review`;
+  const url = `${APP_URL}/b/${args.businessSlug}#review-${args.reviewId}`;
+  const greeting = args.toName ? `Hi ${args.toName},` : "Hi,";
+
+  return safeSend({
+    to: args.to,
+    subject,
+    html: layout({
+      headline: `${args.businessName} just replied.`,
+      body: `
+        <p>${greeting}</p>
+        <p>The verified owner of <strong>${escapeHtml(args.businessName)}</strong> responded to the review you left.</p>
+        <blockquote style="margin:18px 0;padding:14px 16px;border-left:3px solid #7d8b5e;background:#faf5e8;color:#2c2a25;font-size:15px;line-height:1.5;">
+          ${escapeHtml(args.ownerExcerpt)}
+        </blockquote>
+      `,
+      ctaLabel: "See the full thread",
+      ctaUrl: url,
+    }),
+  });
+}
+
 export async function sendBusinessClaimedEmail(args: BusinessClaimedArgs) {
   const subject = `${args.businessName} just got claimed`;
   const url = `${APP_URL}/b/${args.businessSlug}`;

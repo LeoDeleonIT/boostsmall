@@ -7,6 +7,7 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { rateLimit, limits } from "@/lib/rate-limit";
+import { sendNewReviewEmail } from "@/lib/email";
 
 // ─── Write or edit a review ────────────────────────────────────────────────
 // Uses upsert against the @@unique([userId, businessId]) constraint so a
@@ -68,7 +69,15 @@ export async function submitReviewAction(formData: FormData) {
     redirect(`/b/${business.slug}?error=owner-cant-review`);
   }
 
-  await db.review.upsert({
+  // Detect new-vs-edit so we only email owners about the first post, not
+  // every edit. We look first, then upsert.
+  const previous = await db.review.findUnique({
+    where: { userId_businessId: { userId: session.user.id, businessId: business.id } },
+    select: { id: true },
+  });
+  const isFirstReview = !previous;
+
+  const review = await db.review.upsert({
     where: {
       userId_businessId: {
         userId: session.user.id,
@@ -87,7 +96,40 @@ export async function submitReviewAction(formData: FormData) {
       body: parsed.data.body,
       visitDate: parsed.data.visitDate,
     },
+    select: { id: true },
   });
+
+  // Notify verified owners about the new review (fire-and-forget).
+  if (isFirstReview) {
+    const ctx = await db.business.findUnique({
+      where: { id: business.id },
+      select: {
+        name: true,
+        owners: { select: { user: { select: { email: true, name: true } } } },
+      },
+    });
+    const reviewerName =
+      session.user.name ?? session.user.username ?? "A neighbor";
+    const excerpt =
+      parsed.data.body.length > 220
+        ? parsed.data.body.slice(0, 220) + "…"
+        : parsed.data.body;
+    if (ctx) {
+      for (const o of ctx.owners) {
+        if (!o.user?.email) continue;
+        void sendNewReviewEmail({
+          to: o.user.email,
+          toName: o.user.name,
+          businessName: ctx.name,
+          businessSlug: business.slug,
+          reviewId: review.id,
+          rating: parsed.data.rating,
+          reviewerName,
+          bodyExcerpt: excerpt,
+        });
+      }
+    }
+  }
 
   revalidatePath(`/b/${business.slug}`);
   redirect(`/b/${business.slug}?reviewed=1`);
