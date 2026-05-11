@@ -43,10 +43,13 @@ export function generateStaticParams() {
 
 export default async function BusinessDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ reviewed?: string; error?: string }>;
 }) {
   const { slug } = await params;
+  const { reviewed, error } = await searchParams;
   const business = findBusinessBySlug(slug);
   if (!business) notFound();
 
@@ -61,6 +64,20 @@ export default async function BusinessDetailPage({
         orderBy: { createdAt: "desc" },
         select: { url: true },
       },
+      reviews: {
+        where: { status: "PUBLISHED" },
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          rating: true,
+          body: true,
+          createdAt: true,
+          helpfulCount: true,
+          ownerResponse: true,
+          ownerResponseAt: true,
+          user: { select: { name: true, username: true } },
+        },
+      },
     },
   });
   const ownerPhotos = dbBusiness?.photos.map((p) => p.url) ?? [];
@@ -70,7 +87,24 @@ export default async function BusinessDetailPage({
     ...business.photoUrls.filter((url) => !seen.has(url)),
   ];
 
-  const reviews = reviewsForBusiness(slug);
+  // Real DB reviews lead; mock reviews fill in behind if there aren't enough
+  // yet. Shape DB rows to match the SampleReview interface the renderer
+  // expects so we don't have to fork the JSX.
+  const realReviews = (dbBusiness?.reviews ?? []).map((r) => ({
+    id: r.id,
+    authorName: r.user.name ?? r.user.username ?? "Neighbor",
+    authorUsername: r.user.username ?? "anon",
+    rating: r.rating as 1 | 2 | 3 | 4 | 5,
+    body: r.body,
+    createdAt: r.createdAt.toISOString(),
+    helpfulCount: r.helpfulCount,
+    ownerResponse:
+      r.ownerResponse && r.ownerResponseAt
+        ? { body: r.ownerResponse, at: r.ownerResponseAt.toISOString() }
+        : undefined,
+  }));
+  const mockReviews = reviewsForBusiness(slug);
+  const reviews = [...realReviews, ...mockReviews];
   const heroPhoto = photoUrls[0];
   const otherPhotos = photoUrls.slice(1, 5);
   const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
@@ -187,6 +221,17 @@ export default async function BusinessDetailPage({
       <section className="mx-auto max-w-[1400px] px-6 py-12 grid lg:grid-cols-[1fr_360px] gap-12">
         {/* REVIEWS column */}
         <div>
+          {reviewed === "1" && (
+            <div className="mb-6 rounded-2xl border border-sage/40 bg-sage/10 p-4 text-sm text-sage-deep">
+              ✓ Thanks for your review — it&apos;s now live for the neighborhood to see.
+            </div>
+          )}
+          {error === "owner-cant-review" && (
+            <div className="mb-6 rounded-2xl border border-terracotta/40 bg-terracotta/10 p-4 text-sm text-terracotta-deep">
+              Verified owners can&apos;t review their own business. Reply to
+              existing reviews from the owner dashboard instead.
+            </div>
+          )}
           <div className="flex items-center justify-between mb-6">
             <h2 className="font-display text-3xl text-ink">
               Reviews
