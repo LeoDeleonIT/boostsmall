@@ -381,8 +381,11 @@ export default async function SearchPage({
           )}
         </div>
 
-        {/* MAP COLUMN — sticky on lg+, hidden on mobile to keep the page light. */}
-        <div className="hidden lg:block">
+        {/* MAP COLUMN — sticky on lg+, hidden on mobile to keep the page
+            light. Explicit `lg:order-3` because the aside/results pair use
+            order-1/order-2 to swap on mobile, and without this the map
+            would default to order:0 and land in the 220px filter slot. */}
+        <div className="hidden lg:block lg:order-3">
           <div className="sticky top-6 rounded-2xl overflow-hidden border border-border-strong bg-surface shadow-sm">
             <ResultsMap
               pins={results
