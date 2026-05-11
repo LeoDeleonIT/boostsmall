@@ -421,11 +421,8 @@ export default async function SearchPage({
           )}
         </div>
 
-        {/* MAP COLUMN — sticky on lg+, hidden on mobile to keep the page light.
-            `lg:block!` because Tailwind v4 in this codebase emits `.hidden` at
-            top level (outside @layer utilities), so `lg:block` would otherwise
-            lose the cascade. */}
-        <div className="hidden lg:block!">
+        {/* MAP COLUMN — sticky on lg+, hidden on mobile to keep the page light. */}
+        <div className="hidden lg:block">
           <div className="sticky top-6 rounded-2xl overflow-hidden border border-border-strong bg-surface shadow-sm">
             <ResultsMap
               pins={results

@@ -3,7 +3,9 @@ import { Nunito, Quicksand } from "next/font/google";
 import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
 import { extractRouterConfig } from "uploadthing/server";
 import { ourFileRouter } from "@/lib/uploadthing";
-import "@uploadthing/react/styles.css";
+// UploadThing's bundled CSS is imported from globals.css with `layer(components)`
+// so its top-level `.hidden`, `.flex`, etc. don't shadow Tailwind v4's
+// responsive utilities (which live in `@layer utilities`).
 import "./globals.css";
 
 // Body + display font — rounded humanist sans, "homey" but readable at all sizes.

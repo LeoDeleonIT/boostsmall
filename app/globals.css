@@ -1,4 +1,8 @@
 @import "tailwindcss";
+/* UploadThing 7.x ships precompiled Tailwind v3 CSS with utilities at top
+   level. Pulling it into a lower-priority layer prevents its `.hidden`,
+   `.flex`, etc. from shadowing Tailwind v4's responsive utilities. */
+@import "@uploadthing/react/styles.css" layer(components);
 
 /* ─────────────────────────────────────────────────────────────────────────
    boostsmall design tokens — driven by the brand identity (logo):
