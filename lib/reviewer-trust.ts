@@ -163,6 +163,133 @@ export async function recomputeTrust(userId: string): Promise<number> {
   return score;
 }
 
+// ─── Specialty badges ──────────────────────────────────────────────────────
+// Orthogonal to the tier. A user can earn multiple. Each badge has a
+// criterion checked against the same review-history signals used for trust.
+// Image paths are placeholders — drop a real illustration at the listed
+// /public/badges path and it'll override the emoji automatically.
+
+export interface Specialty {
+  key: string;
+  label: string;
+  blurb: string;
+  emoji: string;
+  /** Optional path under /public. Renderer prefers image when present. */
+  image?: string;
+  pillClass: string;
+}
+
+export const SPECIALTIES: readonly Specialty[] = [
+  {
+    key: "coffee-expert",
+    label: "Coffee Expert",
+    blurb: "5+ reviews on coffee shops & cafés.",
+    emoji: "☕",
+    image: "/badges/coffee-expert.png",
+    pillClass: "bg-amber-100 text-amber-900 border-amber-300",
+  },
+  {
+    key: "hidden-gem-finder",
+    label: "Hidden Gem Finder",
+    blurb: "Three+ reviews on under-the-radar spots.",
+    emoji: "💎",
+    image: "/badges/hidden-gem-finder.png",
+    pillClass: "bg-sage/15 text-sage-deep border-sage/40",
+  },
+  {
+    key: "burger-hunter",
+    label: "Burger Hunter",
+    blurb: "5+ reviews chasing the perfect burger.",
+    emoji: "🍔",
+    image: "/badges/burger-hunter.png",
+    pillClass: "bg-terracotta/15 text-terracotta-deep border-terracotta/40",
+  },
+  {
+    key: "photographer",
+    label: "Photographer",
+    blurb: "5+ reviews with your own photos.",
+    emoji: "📸",
+    image: "/badges/photographer.png",
+    pillClass: "bg-ink/10 text-ink border-ink/30",
+  },
+  {
+    key: "helpful-voice",
+    label: "Helpful Voice",
+    blurb: "50+ neighbors found your reviews useful.",
+    emoji: "🤝",
+    image: "/badges/helpful-voice.png",
+    pillClass: "bg-sage/20 text-sage-deep border-sage/50",
+  },
+  {
+    key: "longtime-local",
+    label: "Longtime Local",
+    blurb: "Active reviewer for 6+ months.",
+    emoji: "🏡",
+    image: "/badges/longtime-local.png",
+    pillClass: "bg-terracotta/10 text-terracotta-deep border-terracotta/40",
+  },
+];
+
+// Returns the keys of all specialties the user has earned. Cheap to call —
+// one join'd findMany over their reviews. Use on the profile page; skip on
+// list pages.
+export async function getSpecialties(userId: string): Promise<Specialty[]> {
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    select: { createdAt: true },
+  });
+  if (!user) return [];
+
+  const reviews = await db.review.findMany({
+    where: { userId, status: "PUBLISHED" },
+    select: {
+      body: true,
+      helpfulCount: true,
+      _count: { select: { photos: true } },
+      business: {
+        select: {
+          category: true,
+          subcategory: true,
+          _count: { select: { reviews: { where: { status: "PUBLISHED" } } } },
+        },
+      },
+    },
+  });
+
+  const coffeeCount = reviews.filter((r) => {
+    const sc = (r.business.subcategory ?? "").toLowerCase();
+    return r.business.category === "FOOD_DRINK" && sc.includes("coffee");
+  }).length;
+
+  const burgerCount = reviews.filter((r) => {
+    const sc = (r.business.subcategory ?? "").toLowerCase();
+    return sc.includes("burger") || /\bburger\b/i.test(r.body);
+  }).length;
+
+  // "Under the radar" = the business has <10 real reviews so far.
+  const hiddenGemCount = reviews.filter(
+    (r) => r.business._count.reviews < 10
+  ).length;
+
+  const photoReviewCount = reviews.filter((r) => r._count.photos > 0).length;
+  const helpfulReceived = reviews.reduce((acc, r) => acc + r.helpfulCount, 0);
+  const accountAgeDays = Math.floor(
+    (Date.now() - user.createdAt.getTime()) / 86_400_000
+  );
+
+  const earnedKeys = new Set<string>();
+  if (coffeeCount >= 5) earnedKeys.add("coffee-expert");
+  if (burgerCount >= 5) earnedKeys.add("burger-hunter");
+  if (hiddenGemCount >= 3) earnedKeys.add("hidden-gem-finder");
+  if (photoReviewCount >= 5) earnedKeys.add("photographer");
+  if (helpfulReceived >= 50) earnedKeys.add("helpful-voice");
+  if (accountAgeDays >= 180 && reviews.length >= 3) {
+    earnedKeys.add("longtime-local");
+  }
+
+  return SPECIALTIES.filter((s) => earnedKeys.has(s.key));
+}
+
 // ─── Public-facing signals on the profile page ─────────────────────────────
 // We don't show the raw score; we show the activity that earned it.
 

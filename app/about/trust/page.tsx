@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { TIERS } from "@/lib/reviewer-trust";
+import { TIERS, SPECIALTIES } from "@/lib/reviewer-trust";
 import { ReviewerBadge } from "@/components/review/reviewer-badge";
+import { SpecialtyBadge } from "@/components/review/specialty-badge";
 
 export const metadata: Metadata = {
   title: "How trust works on boostsmall",
@@ -54,6 +55,26 @@ export default function TrustPage() {
                 >
                   <ReviewerBadge tier={t} size="md" link={false} className="self-start sm:self-center shrink-0" />
                   <p className="text-sm text-ink leading-relaxed">{t.blurb}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div>
+            <h2 className="font-display text-2xl text-ink leading-tight mb-2">
+              Specialty badges
+            </h2>
+            <p className="text-sm text-ink-soft mb-6">
+              Stack these on top of your tier as you find your lane.
+            </p>
+            <ul className="grid sm:grid-cols-2 gap-3">
+              {SPECIALTIES.map((s) => (
+                <li
+                  key={s.key}
+                  className="rounded-2xl border border-border bg-surface p-4 flex items-center gap-3"
+                >
+                  <SpecialtyBadge specialty={s} className="shrink-0" />
+                  <p className="text-sm text-ink-soft leading-relaxed">{s.blurb}</p>
                 </li>
               ))}
             </ul>

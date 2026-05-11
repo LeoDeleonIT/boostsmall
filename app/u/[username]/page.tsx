@@ -9,8 +9,9 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { RatingStars } from "@/components/review/rating-stars";
 import { relativeTime } from "@/lib/format";
-import { publicTrustSnapshot } from "@/lib/reviewer-trust";
+import { publicTrustSnapshot, getSpecialties } from "@/lib/reviewer-trust";
 import { ReviewerBadge } from "@/components/review/reviewer-badge";
+import { SpecialtyBadge } from "@/components/review/specialty-badge";
 
 export async function generateMetadata({
   params,
@@ -50,8 +51,11 @@ export default async function UserProfilePage({
 
   if (!profile || !profile.username) notFound();
 
-  // Trust snapshot — tier + the signals that earned it.
-  const trust = await publicTrustSnapshot(profile.id);
+  // Trust snapshot + specialty badges. Cheap; run in parallel.
+  const [trust, specialties] = await Promise.all([
+    publicTrustSnapshot(profile.id),
+    getSpecialties(profile.id),
+  ]);
 
   // Fetch the user's published reviews with the business they're on.
   const reviews = await db.review.findMany({
@@ -130,6 +134,19 @@ export default async function UserProfilePage({
 
             {profile.bio && (
               <p className="mt-4 max-w-[60ch] text-ink leading-relaxed">{profile.bio}</p>
+            )}
+
+            {specialties.length > 0 && (
+              <div className="mt-5">
+                <p className="text-xs uppercase tracking-widest font-bold text-sage-deep mb-2">
+                  Badges earned
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {specialties.map((s) => (
+                    <SpecialtyBadge key={s.key} specialty={s} />
+                  ))}
+                </div>
+              </div>
             )}
 
             <div className="mt-6 flex items-center gap-x-6 gap-y-2 text-sm flex-wrap">
