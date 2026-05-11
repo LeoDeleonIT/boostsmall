@@ -9,6 +9,8 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { RatingStars } from "@/components/review/rating-stars";
 import { relativeTime } from "@/lib/format";
+import { publicTrustSnapshot } from "@/lib/reviewer-trust";
+import { ReviewerBadge } from "@/components/review/reviewer-badge";
 
 export async function generateMetadata({
   params,
@@ -47,6 +49,9 @@ export default async function UserProfilePage({
   ]);
 
   if (!profile || !profile.username) notFound();
+
+  // Trust snapshot — tier + the signals that earned it.
+  const trust = await publicTrustSnapshot(profile.id);
 
   // Fetch the user's published reviews with the business they're on.
   const reviews = await db.review.findMany({
@@ -102,6 +107,7 @@ export default async function UserProfilePage({
               <h1 className="font-display text-4xl text-ink leading-tight">
                 {profile.name ?? `@${profile.username}`}
               </h1>
+              {trust && <ReviewerBadge tier={trust.tier} size="md" />}
               {profile.role === "ADMIN" && <Badge variant="warm">Admin</Badge>}
               {profile.role === "MODERATOR" && <Badge variant="sage">Moderator</Badge>}
               {profile.role === "OWNER" && <Badge variant="sage">Business owner</Badge>}
@@ -109,27 +115,37 @@ export default async function UserProfilePage({
 
             <p className="text-ink-soft mt-1">@{profile.username} · joined {joined}</p>
 
+            {trust && trust.reviewCount > 0 && (
+              <p className="mt-3 text-sm text-ink-soft max-w-[60ch]">
+                <span className="font-semibold text-ink">{trust.tier.label}</span>{" "}
+                — {trust.tier.blurb}{" "}
+                <Link
+                  href="/about/trust"
+                  className="text-terracotta-deep hover:underline underline-offset-4"
+                >
+                  How tiers work →
+                </Link>
+              </p>
+            )}
+
             {profile.bio && (
               <p className="mt-4 max-w-[60ch] text-ink leading-relaxed">{profile.bio}</p>
             )}
 
-            <div className="mt-6 flex items-center gap-6 text-sm">
-              <span className="text-ink">
-                <span className="font-bold tnum">
-                  {profile._count.reviews.toLocaleString()}
-                </span>{" "}
-                <span className="text-ink-soft">
-                  review{profile._count.reviews === 1 ? "" : "s"}
-                </span>
-              </span>
-              <span className="text-ink">
-                <span className="font-bold tnum">
-                  {profile._count.ownedBusinesses.toLocaleString()}
-                </span>{" "}
-                <span className="text-ink-soft">
-                  owned business{profile._count.ownedBusinesses === 1 ? "" : "es"}
-                </span>
-              </span>
+            <div className="mt-6 flex items-center gap-x-6 gap-y-2 text-sm flex-wrap">
+              <Stat n={profile._count.reviews} label={profile._count.reviews === 1 ? "review" : "reviews"} />
+              {trust && trust.helpfulReceived > 0 && (
+                <Stat n={trust.helpfulReceived} label="found helpful" />
+              )}
+              {trust && trust.reviewsWithPhotos > 0 && (
+                <Stat n={trust.reviewsWithPhotos} label={`review${trust.reviewsWithPhotos === 1 ? "" : "s"} with photos`} />
+              )}
+              {trust && trust.responsesEarned > 0 && (
+                <Stat n={trust.responsesEarned} label="owner replies" />
+              )}
+              {profile._count.ownedBusinesses > 0 && (
+                <Stat n={profile._count.ownedBusinesses} label={`owned business${profile._count.ownedBusinesses === 1 ? "" : "es"}`} />
+              )}
             </div>
 
             {isOwn && (
@@ -236,5 +252,14 @@ export default async function UserProfilePage({
 
       <SiteFooter />
     </main>
+  );
+}
+
+function Stat({ n, label }: { n: number; label: string }) {
+  return (
+    <span className="text-ink">
+      <span className="font-bold tnum">{n.toLocaleString()}</span>{" "}
+      <span className="text-ink-soft">{label}</span>
+    </span>
   );
 }

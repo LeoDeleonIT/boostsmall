@@ -29,6 +29,8 @@ import {
   reportReviewAction,
 } from "@/server/actions/review-feedback";
 import { toggleBookmarkAction } from "@/server/actions/bookmark";
+import { tierForScore } from "@/lib/reviewer-trust";
+import { ReviewerBadge } from "@/components/review/reviewer-badge";
 
 export async function generateMetadata({
   params,
@@ -90,7 +92,7 @@ export default async function BusinessDetailPage({
           helpfulCount: true,
           ownerResponse: true,
           ownerResponseAt: true,
-          user: { select: { name: true, username: true } },
+          user: { select: { name: true, username: true, trustScore: true } },
           photos: {
             orderBy: { createdAt: "asc" },
             select: { id: true, url: true },
@@ -113,6 +115,7 @@ export default async function BusinessDetailPage({
     id: r.id,
     authorName: r.user.name ?? r.user.username ?? "Neighbor",
     authorUsername: r.user.username ?? "anon",
+    authorTrustScore: r.user.trustScore as number | undefined,
     rating: r.rating as 1 | 2 | 3 | 4 | 5,
     body: r.body,
     createdAt: r.createdAt.toISOString(),
@@ -126,6 +129,7 @@ export default async function BusinessDetailPage({
   const mockReviews = reviewsForBusiness(slug).map((r) => ({
     ...r,
     photoUrls: [] as string[],
+    authorTrustScore: undefined as number | undefined,
   }));
   const reviews = [...realReviews, ...mockReviews];
 
@@ -380,9 +384,14 @@ export default async function BusinessDetailPage({
                   className="rounded-2xl border border-border bg-surface p-6 scroll-mt-24"
                 >
                   <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="font-bold text-ink">{r.authorName}</p>
-                      <p className="text-xs text-ink-soft">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-bold text-ink">{r.authorName}</p>
+                        {r.authorTrustScore !== undefined && (
+                          <ReviewerBadge tier={tierForScore(r.authorTrustScore)} />
+                        )}
+                      </div>
+                      <p className="text-xs text-ink-soft mt-0.5">
                         @{r.authorUsername} · {relativeTime(r.createdAt)}
                       </p>
                     </div>

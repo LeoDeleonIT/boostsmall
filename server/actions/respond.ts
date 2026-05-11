@@ -8,6 +8,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { rateLimit, limits } from "@/lib/rate-limit";
 import { sendOwnerResponseEmail } from "@/lib/email";
+import { recomputeTrust } from "@/lib/reviewer-trust";
 
 // ─── Owner response to a review ────────────────────────────────────────────
 // Only verified owners of the business can respond. Empty body deletes
@@ -91,6 +92,9 @@ export async function submitOwnerResponseAction(formData: FormData) {
       ownerExcerpt: excerpt,
     });
   }
+
+  // An owner response is a strong positive signal for the reviewer's trust.
+  void recomputeTrust(review.user.id);
 
   revalidatePath(`/b/${review.business.slug}`);
   redirect(`/b/${review.business.slug}?responded=1`);

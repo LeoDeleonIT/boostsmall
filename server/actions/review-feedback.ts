@@ -7,6 +7,7 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { rateLimit, limits } from "@/lib/rate-limit";
+import { recomputeTrust } from "@/lib/reviewer-trust";
 
 // ─── Toggle a "helpful" vote ───────────────────────────────────────────────
 // One vote per (user, review). Click again to un-vote. Review.helpfulCount
@@ -62,6 +63,17 @@ export async function toggleHelpfulAction(formData: FormData) {
     }
   });
 
+  // Recompute trust for both the voter (helpful-given bonus) and the
+  // reviewer (helpful-received bonus). The reviewer side matters most.
+  const review = await db.review.findUnique({
+    where: { id: reviewId },
+    select: { userId: true },
+  });
+  void recomputeTrust(session.user.id);
+  if (review?.userId && review.userId !== session.user.id) {
+    void recomputeTrust(review.userId);
+  }
+
   revalidatePath(`/b/${businessSlug}`);
   redirect(`/b/${businessSlug}#review-${reviewId}`);
 }
@@ -116,6 +128,13 @@ export async function reportReviewAction(formData: FormData) {
       reportedById: session.user.id,
     },
   });
+
+  // A flag is a negative trust signal for the reviewer.
+  const flagged = await db.review.findUnique({
+    where: { id: parsed.data.reviewId },
+    select: { userId: true },
+  });
+  if (flagged?.userId) void recomputeTrust(flagged.userId);
 
   revalidatePath(`/b/${parsed.data.businessSlug}`);
   revalidatePath("/admin");

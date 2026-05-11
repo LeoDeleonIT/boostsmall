@@ -8,6 +8,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { rateLimit, limits } from "@/lib/rate-limit";
 import { sendNewReviewEmail } from "@/lib/email";
+import { recomputeTrust } from "@/lib/reviewer-trust";
 
 // ─── Write or edit a review ────────────────────────────────────────────────
 // Uses upsert against the @@unique([userId, businessId]) constraint so a
@@ -130,6 +131,10 @@ export async function submitReviewAction(formData: FormData) {
       }
     }
   }
+
+  // Recompute the reviewer's hidden trust score with the new signal in mind.
+  // Fire-and-forget — UI redirects on the next line, doesn't wait.
+  void recomputeTrust(session.user.id);
 
   revalidatePath(`/b/${business.slug}`);
   redirect(`/b/${business.slug}?reviewed=1`);
