@@ -8,7 +8,11 @@ import { RatingInput } from "@/components/review/rating-input";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { findBusinessBySlug } from "@/lib/sample-businesses";
-import { submitReviewAction } from "@/server/actions/review";
+import {
+  submitReviewAction,
+  deleteReviewPhotoAction,
+} from "@/server/actions/review";
+import { ReviewPhotoManager } from "@/components/review/review-photo-manager";
 
 export const metadata: Metadata = {
   title: "Write a review",
@@ -48,7 +52,16 @@ export default async function WriteReviewPage({
             businessId: businessRow.id,
           },
         },
-        select: { rating: true, body: true, visitDate: true },
+        select: {
+          id: true,
+          rating: true,
+          body: true,
+          visitDate: true,
+          photos: {
+            orderBy: { createdAt: "asc" },
+            select: { id: true, url: true, width: true, height: true },
+          },
+        },
       })
     : null;
 
@@ -147,6 +160,22 @@ export default async function WriteReviewPage({
               </Button>
             </div>
           </form>
+
+          {/* Photos: only available once the review exists (upload needs a
+              reviewId). After posting, return to "Edit your review" to add
+              photos. */}
+          {existing && (
+            <section className="mt-10 space-y-3 border-t border-border pt-8">
+              <h2 className="text-xs uppercase tracking-widest font-bold text-sage-deep">
+                Photos on your review
+              </h2>
+              <ReviewPhotoManager
+                reviewId={existing.id}
+                photos={existing.photos}
+                onDeletePhoto={deleteReviewPhotoAction}
+              />
+            </section>
+          )}
         </div>
       </section>
 

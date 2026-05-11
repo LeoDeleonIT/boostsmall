@@ -92,3 +92,29 @@ export async function submitReviewAction(formData: FormData) {
   revalidatePath(`/b/${business.slug}`);
   redirect(`/b/${business.slug}?reviewed=1`);
 }
+
+// ─── Delete a photo from your own review ───────────────────────────────────
+// Called from the ReviewPhotoManager via a client transition.
+
+export async function deleteReviewPhotoAction(photoId: string) {
+  const session = await auth();
+  if (!session?.user) throw new Error("Not signed in");
+
+  const photo = await db.photo.findUnique({
+    where: { id: photoId },
+    select: {
+      id: true,
+      userId: true,
+      review: { select: { id: true, userId: true, business: { select: { slug: true } } } },
+    },
+  });
+  if (!photo) throw new Error("Photo not found");
+  // Only the review author can remove photos from their review.
+  if (!photo.review || photo.review.userId !== session.user.id) {
+    throw new Error("Not allowed");
+  }
+
+  await db.photo.delete({ where: { id: photoId } });
+  revalidatePath(`/b/${photo.review.business.slug}`);
+  revalidatePath(`/b/${photo.review.business.slug}/review`);
+}

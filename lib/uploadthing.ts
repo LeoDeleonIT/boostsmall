@@ -60,6 +60,56 @@ export const ourFileRouter = {
 
       return { uploadedBy: metadata.userId };
     }),
+
+  // Photos attached to a user's review. Only the review's author can
+  // upload; cap at 4 photos per review to keep page weight sane.
+  reviewPhoto: f({ image: { maxFileSize: "8MB", maxFileCount: 4 } })
+    .input(z.object({ reviewId: z.string().cuid() }))
+    .middleware(async ({ input }) => {
+      const session = await auth();
+      if (!session?.user) throw new UploadThingError("Sign in to upload photos.");
+
+      const review = await db.review.findUnique({
+        where: { id: input.reviewId },
+        select: { userId: true, businessId: true },
+      });
+      if (!review) throw new UploadThingError("Review not found.");
+      if (review.userId !== session.user.id) {
+        throw new UploadThingError("You can only add photos to your own review.");
+      }
+
+      return {
+        reviewId: input.reviewId,
+        businessId: review.businessId,
+        userId: session.user.id,
+      };
+    })
+    .onUploadComplete(async ({ metadata, file }) => {
+      let width = 0;
+      let height = 0;
+      try {
+        const res = await fetch(file.ufsUrl);
+        const buf = Buffer.from(await res.arrayBuffer());
+        const meta = await sharp(buf).metadata();
+        width = meta.width ?? 0;
+        height = meta.height ?? 0;
+      } catch {
+        // Probe failed; renderer handles 0/0.
+      }
+
+      await db.photo.create({
+        data: {
+          url: file.ufsUrl,
+          width,
+          height,
+          businessId: metadata.businessId,
+          reviewId: metadata.reviewId,
+          userId: metadata.userId,
+        },
+      });
+
+      return { uploadedBy: metadata.userId };
+    }),
 } satisfies FileRouter;
 
 export type OurFileRouter = typeof ourFileRouter;

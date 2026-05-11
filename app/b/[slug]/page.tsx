@@ -90,6 +90,10 @@ export default async function BusinessDetailPage({
           ownerResponse: true,
           ownerResponseAt: true,
           user: { select: { name: true, username: true } },
+          photos: {
+            orderBy: { createdAt: "asc" },
+            select: { id: true, url: true },
+          },
         },
       },
     },
@@ -116,8 +120,12 @@ export default async function BusinessDetailPage({
       r.ownerResponse && r.ownerResponseAt
         ? { body: r.ownerResponse, at: r.ownerResponseAt.toISOString() }
         : undefined,
+    photoUrls: r.photos.map((p) => p.url),
   }));
-  const mockReviews = reviewsForBusiness(slug);
+  const mockReviews = reviewsForBusiness(slug).map((r) => ({
+    ...r,
+    photoUrls: [] as string[],
+  }));
   const reviews = [...realReviews, ...mockReviews];
 
   // Real review IDs — only these support the owner-response form (mocks
@@ -329,6 +337,28 @@ export default async function BusinessDetailPage({
                     <RatingStars rating={r.rating} size="sm" />
                   </div>
                   <p className="mt-4 text-ink leading-relaxed">{r.body}</p>
+
+                  {r.photoUrls.length > 0 && (
+                    <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {r.photoUrls.map((url) => (
+                        <a
+                          key={url}
+                          href={url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="relative aspect-square overflow-hidden rounded-xl border border-border bg-ink/5"
+                        >
+                          <Image
+                            src={url}
+                            alt=""
+                            fill
+                            sizes="(min-width: 640px) 25vw, 50vw"
+                            className="object-cover hover:scale-[1.03] transition-transform"
+                          />
+                        </a>
+                      ))}
+                    </div>
+                  )}
 
                   {r.ownerResponse && (
                     <div className="mt-5 rounded-xl bg-sage/8 border border-sage/20 p-4">
