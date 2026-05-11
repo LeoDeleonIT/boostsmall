@@ -50,8 +50,9 @@ export default async function BusinessDetailPage({
   const business = findBusinessBySlug(slug);
   if (!business) notFound();
 
-  // Fetch real owner-uploaded photos from the DB. If any exist, prefer them
-  // over the seed mock photoUrls — this is what makes uploads visible here.
+  // Owner-uploaded photos lead, with seed photos backfilling behind so a
+  // first owner upload doesn't wipe the existing gallery. Dedupe by URL in
+  // case a seed photo got re-uploaded.
   const dbBusiness = await db.business.findUnique({
     where: { slug },
     select: {
@@ -62,9 +63,12 @@ export default async function BusinessDetailPage({
       },
     },
   });
-  const realPhotoUrls = dbBusiness?.photos.map((p) => p.url) ?? [];
-  const photoUrls =
-    realPhotoUrls.length > 0 ? realPhotoUrls : business.photoUrls;
+  const ownerPhotos = dbBusiness?.photos.map((p) => p.url) ?? [];
+  const seen = new Set(ownerPhotos);
+  const photoUrls = [
+    ...ownerPhotos,
+    ...business.photoUrls.filter((url) => !seen.has(url)),
+  ];
 
   const reviews = reviewsForBusiness(slug);
   const heroPhoto = photoUrls[0];
