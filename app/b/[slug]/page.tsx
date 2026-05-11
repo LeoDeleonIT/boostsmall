@@ -22,6 +22,8 @@ import {
   relativeTime,
 } from "@/lib/format";
 import { db } from "@/lib/db";
+import { auth } from "@/lib/auth";
+import { submitOwnerResponseAction } from "@/server/actions/respond";
 
 export async function generateMetadata({
   params,
@@ -46,12 +48,14 @@ export default async function BusinessDetailPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ reviewed?: string; error?: string }>;
+  searchParams: Promise<{ reviewed?: string; responded?: string; error?: string }>;
 }) {
   const { slug } = await params;
-  const { reviewed, error } = await searchParams;
+  const { reviewed, responded, error } = await searchParams;
   const business = findBusinessBySlug(slug);
   if (!business) notFound();
+
+  const session = await auth();
 
   // Owner-uploaded photos lead, with seed photos backfilling behind so a
   // first owner upload doesn't wipe the existing gallery. Dedupe by URL in
@@ -59,6 +63,7 @@ export default async function BusinessDetailPage({
   const dbBusiness = await db.business.findUnique({
     where: { slug },
     select: {
+      owners: { select: { userId: true } },
       photos: {
         where: { reviewId: null },
         orderBy: { createdAt: "desc" },
@@ -105,6 +110,13 @@ export default async function BusinessDetailPage({
   }));
   const mockReviews = reviewsForBusiness(slug);
   const reviews = [...realReviews, ...mockReviews];
+
+  // Real review IDs — only these support the owner-response form (mocks
+  // don't exist in the DB so the action would fail).
+  const realReviewIds = new Set(realReviews.map((r) => r.id));
+  const isOwner =
+    !!session?.user?.id &&
+    !!dbBusiness?.owners.some((o) => o.userId === session.user.id);
   const heroPhoto = photoUrls[0];
   const otherPhotos = photoUrls.slice(1, 5);
   const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
@@ -226,6 +238,11 @@ export default async function BusinessDetailPage({
               ✓ Thanks for your review — it&apos;s now live for the neighborhood to see.
             </div>
           )}
+          {responded === "1" && (
+            <div className="mb-6 rounded-2xl border border-sage/40 bg-sage/10 p-4 text-sm text-sage-deep">
+              ✓ Your response is posted under the review.
+            </div>
+          )}
           {error === "owner-cant-review" && (
             <div className="mb-6 rounded-2xl border border-terracotta/40 bg-terracotta/10 p-4 text-sm text-terracotta-deep">
               Verified owners can&apos;t review their own business. Reply to
@@ -281,6 +298,44 @@ export default async function BusinessDetailPage({
                         {relativeTime(r.ownerResponse.at)}
                       </p>
                     </div>
+                  )}
+
+                  {/* Owner-response form: shown only to verified owners
+                      viewing a real (DB) review. <details> keeps it
+                      collapsed by default with no client component. */}
+                  {isOwner && realReviewIds.has(r.id) && (
+                    <details className="mt-4 group">
+                      <summary className="cursor-pointer list-none inline-flex items-center gap-1.5 text-xs font-bold text-sage-deep hover:text-ink select-none">
+                        <span className="group-open:hidden">
+                          {r.ownerResponse ? "Edit response →" : "Respond as owner →"}
+                        </span>
+                        <span className="hidden group-open:inline">↓ Close</span>
+                      </summary>
+                      <form
+                        action={submitOwnerResponseAction}
+                        className="mt-3 space-y-2"
+                      >
+                        <input type="hidden" name="reviewId" value={r.id} />
+                        <textarea
+                          name="body"
+                          rows={3}
+                          maxLength={2000}
+                          defaultValue={r.ownerResponse?.body ?? ""}
+                          placeholder="Thanks for stopping by — anything you'd want regulars to know?"
+                          className="w-full rounded-xl border border-border-strong bg-surface px-3 py-2 text-sm leading-relaxed text-ink placeholder:text-ink-soft/70 focus:outline-none focus:ring-2 focus:ring-terracotta resize-y"
+                        />
+                        <div className="flex items-center justify-between gap-3 text-xs text-ink-soft">
+                          <span>
+                            {r.ownerResponse
+                              ? "Empty + save to retract your response."
+                              : "Visible publicly under this review."}
+                          </span>
+                          <Button type="submit" variant="sage" size="sm" className="rounded-full">
+                            {r.ownerResponse ? "Save changes" : "Post response"}
+                          </Button>
+                        </div>
+                      </form>
+                    </details>
                   )}
 
                   <div className="mt-4 flex items-center gap-3 text-xs text-ink-soft">
