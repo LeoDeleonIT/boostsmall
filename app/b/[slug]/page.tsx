@@ -31,6 +31,7 @@ import {
 import { toggleBookmarkAction } from "@/server/actions/bookmark";
 import { tierForScore, reviewWeight } from "@/lib/reviewer-trust";
 import { ReviewerBadge } from "@/components/review/reviewer-badge";
+import { VerifyVisitButton } from "@/components/business/verify-visit-button";
 
 export async function generateMetadata({
   params,
@@ -60,10 +61,12 @@ export default async function BusinessDetailPage({
     responded?: string;
     reported?: string;
     error?: string;
+    reviewSort?: "trusted" | "newest";
   }>;
 }) {
   const { slug } = await params;
-  const { reviewed, responded, reported, error } = await searchParams;
+  const { reviewed, responded, reported, error, reviewSort } = await searchParams;
+  const sortMode: "trusted" | "newest" = reviewSort === "newest" ? "newest" : "trusted";
   const business = findBusinessBySlug(slug);
   if (!business) notFound();
 
@@ -92,7 +95,7 @@ export default async function BusinessDetailPage({
           helpfulCount: true,
           ownerResponse: true,
           ownerResponseAt: true,
-          user: { select: { name: true, username: true, trustScore: true } },
+          user: { select: { id: true, name: true, username: true, trustScore: true } },
           photos: {
             orderBy: { createdAt: "asc" },
             select: { id: true, url: true },
@@ -108,6 +111,23 @@ export default async function BusinessDetailPage({
     ...business.photoUrls.filter((url) => !seen.has(url)),
   ];
 
+  // Which review authors have a verified visit here? Used to render the
+  // "✓ Visit verified" pill next to their tier badge.
+  const verifiedAuthorIds = new Set<string>();
+  if (dbBusiness && dbBusiness.reviews.length > 0) {
+    const businessRow = await db.business.findUnique({
+      where: { slug },
+      select: { id: true },
+    });
+    if (businessRow) {
+      const visits = await db.verifiedVisit.findMany({
+        where: { businessId: businessRow.id },
+        select: { userId: true },
+      });
+      for (const v of visits) verifiedAuthorIds.add(v.userId);
+    }
+  }
+
   // Real DB reviews lead; mock reviews fill in behind if there aren't enough
   // yet. Shape DB rows to match the SampleReview interface the renderer
   // expects so we don't have to fork the JSX.
@@ -116,6 +136,7 @@ export default async function BusinessDetailPage({
     authorName: r.user.name ?? r.user.username ?? "Neighbor",
     authorUsername: r.user.username ?? "anon",
     authorTrustScore: r.user.trustScore as number | undefined,
+    authorVerifiedVisit: verifiedAuthorIds.has(r.user.id),
     rating: r.rating as 1 | 2 | 3 | 4 | 5,
     body: r.body,
     createdAt: r.createdAt.toISOString(),
@@ -130,22 +151,31 @@ export default async function BusinessDetailPage({
     ...r,
     photoUrls: [] as string[],
     authorTrustScore: undefined as number | undefined,
+    authorVerifiedVisit: false,
   }));
 
-  // Weighted sort: trust × helpful × recency. Real, recent, well-voted
-  // reviews from trusted neighbors surface first; mocks settle behind.
+  // Sort mode controlled by ?reviewSort= URL param. Default "trusted" uses
+  // the weighted score (trust × helpful × recency); "newest" is plain
+  // createdAt desc.
   const now = Date.now();
-  const reviews = [...realReviews, ...mockReviews]
-    .map((r) => ({
-      r,
-      w: reviewWeight({
-        trustScore: r.authorTrustScore ?? null,
-        helpfulCount: r.helpfulCount,
-        ageDays: (now - new Date(r.createdAt).getTime()) / 86_400_000,
-      }),
-    }))
-    .sort((a, b) => b.w - a.w)
-    .map((x) => x.r);
+  const reviews =
+    sortMode === "newest"
+      ? [...realReviews, ...mockReviews].sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        )
+      : [...realReviews, ...mockReviews]
+          .map((r) => ({
+            r,
+            w: reviewWeight({
+              trustScore: r.authorTrustScore ?? null,
+              helpfulCount: r.helpfulCount,
+              ageDays:
+                (now - new Date(r.createdAt).getTime()) / 86_400_000,
+            }),
+          }))
+          .sort((a, b) => b.w - a.w)
+          .map((x) => x.r);
 
   // Real review IDs — only these support the owner-response form (mocks
   // don't exist in the DB so the action would fail).
@@ -153,6 +183,27 @@ export default async function BusinessDetailPage({
   const isOwner =
     !!session?.user?.id &&
     !!dbBusiness?.owners.some((o) => o.userId === session.user.id);
+
+  // Has the current user already verified a visit here?
+  let currentUserVerified = false;
+  if (session?.user?.id) {
+    const businessRow = await db.business.findUnique({
+      where: { slug },
+      select: { id: true },
+    });
+    if (businessRow) {
+      const v = await db.verifiedVisit.findUnique({
+        where: {
+          userId_businessId: {
+            userId: session.user.id,
+            businessId: businessRow.id,
+          },
+        },
+        select: { id: true },
+      });
+      currentUserVerified = !!v;
+    }
+  }
 
   // Is the current user bookmarking this business?
   let isBookmarked = false;
@@ -329,6 +380,12 @@ export default async function BusinessDetailPage({
                   Get directions
                 </a>
               </Button>
+              {session?.user && (
+                <VerifyVisitButton
+                  businessSlug={business.slug}
+                  alreadyVerified={currentUserVerified}
+                />
+              )}
             </div>
           </div>
 
@@ -370,7 +427,7 @@ export default async function BusinessDetailPage({
               existing reviews from the owner dashboard instead.
             </div>
           )}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-3 flex-wrap gap-3">
             <h2 className="font-display text-3xl text-ink">
               Reviews
               <span className="ml-2 text-ink-soft text-base font-normal">
@@ -380,6 +437,31 @@ export default async function BusinessDetailPage({
             <Button variant="outline" size="sm" asChild>
               <Link href={`/b/${business.slug}/review`}>Write yours</Link>
             </Button>
+          </div>
+          <div className="mb-6 flex items-center gap-2 text-xs">
+            <span className="text-ink-soft uppercase tracking-widest font-bold">
+              Sort
+            </span>
+            <Link
+              href={`/b/${business.slug}`}
+              className={
+                sortMode === "trusted"
+                  ? "inline-flex items-center rounded-full bg-sage text-white font-bold px-3 py-1"
+                  : "inline-flex items-center rounded-full border border-border-strong bg-surface text-ink-soft font-bold px-3 py-1 hover:text-ink"
+              }
+            >
+              Most trusted
+            </Link>
+            <Link
+              href={`/b/${business.slug}?reviewSort=newest`}
+              className={
+                sortMode === "newest"
+                  ? "inline-flex items-center rounded-full bg-sage text-white font-bold px-3 py-1"
+                  : "inline-flex items-center rounded-full border border-border-strong bg-surface text-ink-soft font-bold px-3 py-1 hover:text-ink"
+              }
+            >
+              Newest
+            </Link>
           </div>
 
           {reviews.length === 0 ? (
@@ -403,6 +485,15 @@ export default async function BusinessDetailPage({
                         <p className="font-bold text-ink">{r.authorName}</p>
                         {r.authorTrustScore !== undefined && (
                           <ReviewerBadge tier={tierForScore(r.authorTrustScore)} />
+                        )}
+                        {r.authorVerifiedVisit && (
+                          <span
+                            className="inline-flex items-center gap-1 rounded-full border border-sage/40 bg-sage/10 text-sage-deep text-xs font-bold px-2 py-0.5"
+                            title="This reviewer confirmed they actually visited"
+                          >
+                            <span aria-hidden>✓</span>
+                            Verified visit
+                          </span>
                         )}
                       </div>
                       <p className="text-xs text-ink-soft mt-0.5">

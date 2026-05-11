@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { BusinessCard } from "@/components/business/business-card";
 import { UserNav } from "@/components/user-nav";
 import { topRated, recentlyAdded } from "@/lib/sample-businesses";
+import { championsLoveBusinesses } from "@/lib/champions-love";
 import {
   Search,
   Utensils,
@@ -77,7 +78,8 @@ const TILES: CategoryTile[] = [
   },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const championsPicks = await championsLoveBusinesses();
   return (
     <main className="min-h-screen flex flex-col bg-background">
       {/* ─── HERO ───────────────────────────────────────────────────────── */}
@@ -251,6 +253,39 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* ─── CHAMPIONS LOVE ─────────────────────────────────────────────── */}
+      {championsPicks.length > 0 && (
+        <section className="bg-background border-b border-border">
+          <div className="mx-auto max-w-[1400px] px-6 py-16 md:py-20">
+            <div className="flex items-end justify-between gap-6 mb-8">
+              <div>
+                <p className="text-xs uppercase tracking-[0.16em] text-terracotta-deep font-bold mb-2">
+                  🌳 Champions love
+                </p>
+                <h2 className="font-display text-ink text-3xl md:text-4xl leading-tight">
+                  Picks from neighbors who&apos;ve earned it
+                </h2>
+                <p className="mt-3 text-sm text-ink-soft max-w-prose">
+                  Places that top-tier reviewers — Neighborhood Guides and
+                  above — have written about recently.{" "}
+                  <Link
+                    href="/about/trust"
+                    className="text-terracotta-deep hover:underline underline-offset-4 font-semibold"
+                  >
+                    What are tiers? →
+                  </Link>
+                </p>
+              </div>
+            </div>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {championsPicks.map((b) => (
+                <BusinessCard key={b.slug} business={b} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ─── TOP RATED ───────────────────────────────────────────────────── */}
       <section className="bg-background-soft border-y border-border">

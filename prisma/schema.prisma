@@ -137,6 +137,7 @@ model User {
   resolvedFlags       ModerationFlag[] @relation("ResolvedFlags")
   helpfulVotes        ReviewHelpful[]
   bookmarks           Bookmark[]
+  verifiedVisits      VerifiedVisit[]
   addedChainEntries   ChainBlocklist[]
 
   @@index([username])
@@ -180,10 +181,11 @@ model Business {
   approvedAt      DateTime?
   updatedAt       DateTime  @updatedAt
 
-  reviews   Review[]
-  photos    Photo[]
-  owners    BusinessOwner[]
-  bookmarks Bookmark[]
+  reviews        Review[]
+  photos         Photo[]
+  owners         BusinessOwner[]
+  bookmarks      Bookmark[]
+  verifiedVisits VerifiedVisit[]
 
   @@index([status])
   @@index([category])
@@ -230,6 +232,29 @@ model Review {
   @@unique([userId, businessId]) // one review per user per business
   @@index([businessId, status, createdAt])
   @@index([userId, createdAt])
+}
+
+// Recorded when a signed-in user opts in to "I'm here" geolocation check-in
+// inside the business detail page AND their reported coords fall within a
+// small radius of the business's lat/lng. The lat/lng we store is the user's
+// reported position, not the business's — useful for spot-checking spam if
+// it ever becomes a problem.
+model VerifiedVisit {
+  id              String   @id @default(cuid())
+  userId          String
+  businessId      String
+  lat             Float
+  lng             Float
+  accuracyMeters  Float?
+  distanceMeters  Float
+  createdAt       DateTime @default(now())
+
+  user     User     @relation(fields: [userId],     references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, businessId]) // one verified visit per user per business
+  @@index([businessId])
+  @@index([userId])
 }
 
 // Private "save for later" list. One row per (user, business). Plenty of
