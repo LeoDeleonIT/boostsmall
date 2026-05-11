@@ -251,93 +251,33 @@ export default async function SearchPage({
 
       {/* MAIN GRID */}
       <section className="mx-auto max-w-[1500px] px-6 py-10 grid lg:grid-cols-[220px_1fr_400px] gap-8">
-        {/* SIDEBAR */}
-        <aside className="space-y-6">
-          <div>
-            <p className="text-xs uppercase tracking-widest font-bold text-sage-deep mb-3">
-              Price
-            </p>
-            <ul className="space-y-1.5 text-sm">
-              {[0, 1, 2, 3, 4].map((tier) => (
-                <li key={tier}>
-                  <Link
-                    href={buildHref(params, {
-                      price: tier ? String(tier) : undefined,
-                    })}
-                    className={
-                      minPrice === tier
-                        ? "text-ink font-bold"
-                        : "text-ink-soft hover:text-ink"
-                    }
-                  >
-                    {tier === 0 ? "Any price" : `Up to ${priceLabel(tier as 1 | 2 | 3 | 4)}`}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div>
-            <p className="text-xs uppercase tracking-widest font-bold text-sage-deep mb-3">
-              Rating
-            </p>
-            <ul className="space-y-1.5 text-sm">
-              {[0, 4.5, 4.0, 3.5].map((r) => (
-                <li key={r}>
-                  <Link
-                    href={buildHref(params, {
-                      minRating: r ? String(r) : undefined,
-                    })}
-                    className={
-                      minRating === r
-                        ? "text-ink font-bold"
-                        : "text-ink-soft hover:text-ink"
-                    }
-                  >
-                    {r === 0 ? "Any rating" : `${r.toFixed(1)} & up`}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {!usingLocation && (
-            <div>
-              <p className="text-xs uppercase tracking-widest font-bold text-sage-deep mb-3">
-                Sort by
-              </p>
-              <ul className="space-y-1.5 text-sm">
-                {SORT_OPTIONS.map((o) => (
-                  <li key={o.value}>
-                    <Link
-                      href={buildHref(params, { sort: o.value })}
-                      className={
-                        sort === o.value
-                          ? "text-ink font-bold"
-                          : "text-ink-soft hover:text-ink"
-                      }
-                    >
-                      {o.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+        {/* SIDEBAR — collapsed by default on mobile (below results),
+            full sidebar at lg+ */}
+        <aside className="space-y-6 order-2 lg:order-1">
+          {/* Mobile: collapsed under a <details>. Default closed so results
+              show first. Hidden at lg+ where the inline sidebar takes over. */}
+          <details className="lg:hidden">
+            <summary className="cursor-pointer list-none rounded-full border border-border-strong bg-surface px-4 py-2 text-sm font-bold text-ink inline-flex items-center gap-2">
+              <span>Filters</span>
+              {(minPrice > 0 || minRating > 0) && (
+                <span className="rounded-full bg-sage text-white text-xs px-2 py-0.5 tnum">
+                  {[minPrice > 0, minRating > 0].filter(Boolean).length}
+                </span>
+              )}
+            </summary>
+            <div className="mt-4 space-y-6">
+              {renderFilters({ params, minPrice, minRating, sort, usingLocation })}
             </div>
-          )}
+          </details>
 
-          <div className="rounded-2xl border border-sage/30 bg-sage/5 p-4 text-sm">
-            <p className="font-bold text-ink">Don&apos;t see a place?</p>
-            <p className="mt-1 text-ink-soft">
-              Add it. We review every submission to keep the platform honest.
-            </p>
-            <Button variant="sage" size="sm" className="mt-3" asChild>
-              <Link href="/submit">Add a business</Link>
-            </Button>
+          {/* Desktop: always-visible sidebar. */}
+          <div className="hidden lg:block space-y-6">
+            {renderFilters({ params, minPrice, minRating, sort, usingLocation })}
           </div>
         </aside>
 
         {/* RESULTS */}
-        <div>
+        <div className="order-1 lg:order-2">
           <div className="flex items-end justify-between mb-6">
             <div>
               <h1 className="font-display text-3xl text-ink leading-tight">
@@ -486,6 +426,109 @@ function errorMessage(code: string) {
     default:
       return "Something went wrong with the location lookup.";
   }
+}
+
+// Renders Price/Rating/Sort + "Don't see a place?" card. Used twice in the
+// aside (collapsed <details> on mobile, plain div on desktop) so we don't
+// fight the browser's UA stylesheet for <details>.
+function renderFilters({
+  params,
+  minPrice,
+  minRating,
+  sort,
+  usingLocation,
+}: {
+  params: SearchParams;
+  minPrice: number;
+  minRating: number;
+  sort: string;
+  usingLocation: boolean;
+}) {
+  return (
+    <>
+      <div>
+        <p className="text-xs uppercase tracking-widest font-bold text-sage-deep mb-3">
+          Price
+        </p>
+        <ul className="space-y-1.5 text-sm">
+          {[0, 1, 2, 3, 4].map((tier) => (
+            <li key={tier}>
+              <Link
+                href={buildHref(params, {
+                  price: tier ? String(tier) : undefined,
+                })}
+                className={
+                  minPrice === tier
+                    ? "text-ink font-bold"
+                    : "text-ink-soft hover:text-ink"
+                }
+              >
+                {tier === 0 ? "Any price" : `Up to ${priceLabel(tier as 1 | 2 | 3 | 4)}`}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div>
+        <p className="text-xs uppercase tracking-widest font-bold text-sage-deep mb-3">
+          Rating
+        </p>
+        <ul className="space-y-1.5 text-sm">
+          {[0, 4.5, 4.0, 3.5].map((r) => (
+            <li key={r}>
+              <Link
+                href={buildHref(params, {
+                  minRating: r ? String(r) : undefined,
+                })}
+                className={
+                  minRating === r
+                    ? "text-ink font-bold"
+                    : "text-ink-soft hover:text-ink"
+                }
+              >
+                {r === 0 ? "Any rating" : `${r.toFixed(1)} & up`}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {!usingLocation && (
+        <div>
+          <p className="text-xs uppercase tracking-widest font-bold text-sage-deep mb-3">
+            Sort by
+          </p>
+          <ul className="space-y-1.5 text-sm">
+            {SORT_OPTIONS.map((o) => (
+              <li key={o.value}>
+                <Link
+                  href={buildHref(params, { sort: o.value })}
+                  className={
+                    sort === o.value
+                      ? "text-ink font-bold"
+                      : "text-ink-soft hover:text-ink"
+                  }
+                >
+                  {o.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <div className="rounded-2xl border border-sage/30 bg-sage/5 p-4 text-sm">
+        <p className="font-bold text-ink">Don&apos;t see a place?</p>
+        <p className="mt-1 text-ink-soft">
+          Add it. We review every submission to keep the platform honest.
+        </p>
+        <Button variant="sage" size="sm" className="mt-3" asChild>
+          <Link href="/submit">Add a business</Link>
+        </Button>
+      </div>
+    </>
+  );
 }
 
 export const dynamic = "force-dynamic";
