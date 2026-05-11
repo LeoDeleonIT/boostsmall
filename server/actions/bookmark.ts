@@ -18,9 +18,19 @@ const BookmarkSchema = z.object({
 
 export async function toggleBookmarkAction(formData: FormData) {
   const session = await auth();
+  const slug = (formData.get("businessSlug") as string) ?? "";
+
+  // Where to send the user after toggling. Caller passes a hidden field
+  // (e.g. "/search?...") so card-side clicks don't yank you to the business
+  // detail page. Whitelisted to internal paths to prevent open redirects.
+  const requested = (formData.get("redirectTo") as string)?.trim() ?? "";
+  const safeReturn =
+    requested.startsWith("/") && !requested.startsWith("//")
+      ? requested
+      : `/b/${slug}`;
+
   if (!session?.user) {
-    const slug = (formData.get("businessSlug") as string) ?? "";
-    redirect(`/sign-in?callbackUrl=${encodeURIComponent(`/b/${slug}`)}`);
+    redirect(`/sign-in?callbackUrl=${encodeURIComponent(safeReturn)}`);
   }
 
   const parsed = BookmarkSchema.safeParse({
@@ -28,10 +38,9 @@ export async function toggleBookmarkAction(formData: FormData) {
   });
   if (!parsed.success) redirect("/");
 
-  // Reuse the review preset — same write-rate concern.
   const rl = rateLimit(`bookmark:${session.user.id}`, limits.review);
   if (!rl.ok) {
-    redirect(`/b/${parsed.data.businessSlug}?error=rate-limited`);
+    redirect(`${safeReturn}${safeReturn.includes("?") ? "&" : "?"}error=rate-limited`);
   }
 
   const business = await db.business.findUnique({
@@ -58,5 +67,5 @@ export async function toggleBookmarkAction(formData: FormData) {
 
   revalidatePath(`/b/${business.slug}`);
   revalidatePath("/u/saved");
-  redirect(`/b/${business.slug}`);
+  redirect(safeReturn);
 }

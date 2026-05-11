@@ -61,7 +61,12 @@ export default async function SavedPage() {
         ) : (
           <div className="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {savedBusinesses.map((b) => (
-              <BusinessCard key={b.slug} business={b} />
+              <BusinessCard
+                key={b.slug}
+                business={b}
+                bookmarked
+                bookmarkRedirectTo="/u/saved"
+              />
             ))}
           </div>
         )}

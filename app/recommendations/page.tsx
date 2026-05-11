@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { SAMPLE_BUSINESSES, dedupeByBrand, type Category } from "@/lib/sample-businesses";
 import { haversineMiles } from "@/lib/distance";
 import { lookupZipAction } from "@/server/actions/zip-lookup";
+import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
 
 export const metadata: Metadata = {
   title: "Recommendations",
@@ -65,6 +67,17 @@ export default async function RecommendationsPage({
     .slice(0, 6);
 
   const newest = deduped.filter((b) => b.recentlyAdded).slice(0, 6);
+
+  // Bookmark slugs for filled hearts on cards.
+  const session = await auth();
+  let bookmarkedSlugs: Set<string> = new Set();
+  if (session?.user?.id) {
+    const bms = await db.bookmark.findMany({
+      where: { userId: session.user.id },
+      select: { business: { select: { slug: true } } },
+    });
+    bookmarkedSlugs = new Set(bms.map((b) => b.business.slug));
+  }
 
   return (
     <main className="min-h-screen flex flex-col bg-background">
@@ -169,7 +182,7 @@ export default async function RecommendationsPage({
           }
           seeAllHref={searchHref({ sort: "rating", zip, lat, lng, radius })}
         >
-          <Grid businesses={topRated} />
+          <Grid businesses={topRated} bookmarkedSlugs={bookmarkedSlugs} />
         </Section>
       )}
 
@@ -187,7 +200,7 @@ export default async function RecommendationsPage({
             title={cat.label === "Eat & Drink" ? "What to eat this weekend" : `Best in ${cat.label.toLowerCase()}`}
             seeAllHref={searchHref({ category: cat.id, sort: "rating", zip, lat, lng, radius })}
           >
-            <Grid businesses={top} />
+            <Grid businesses={top} bookmarkedSlugs={bookmarkedSlugs} />
           </Section>
         );
       })}
@@ -200,7 +213,7 @@ export default async function RecommendationsPage({
           seeAllHref={searchHref({ zip, lat, lng, radius })}
           tint="warm"
         >
-          <Grid businesses={ownerVerified} />
+          <Grid businesses={ownerVerified} bookmarkedSlugs={bookmarkedSlugs} />
         </Section>
       )}
 
@@ -211,7 +224,7 @@ export default async function RecommendationsPage({
           title="Recently added"
           seeAllHref={searchHref({ sort: "newest", zip, lat, lng, radius })}
         >
-          <Grid businesses={newest} />
+          <Grid businesses={newest} bookmarkedSlugs={bookmarkedSlugs} />
         </Section>
       )}
 
@@ -273,11 +286,24 @@ function Section({
   );
 }
 
-function Grid({ businesses }: { businesses: typeof SAMPLE_BUSINESSES }) {
+function Grid({
+  businesses,
+  bookmarkedSlugs,
+  redirectTo = "/recommendations",
+}: {
+  businesses: typeof SAMPLE_BUSINESSES;
+  bookmarkedSlugs?: Set<string>;
+  redirectTo?: string;
+}) {
   return (
     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
       {businesses.map((b) => (
-        <BusinessCard key={b.slug} business={b} />
+        <BusinessCard
+          key={b.slug}
+          business={b}
+          bookmarked={bookmarkedSlugs?.has(b.slug) ?? false}
+          bookmarkRedirectTo={redirectTo}
+        />
       ))}
     </div>
   );

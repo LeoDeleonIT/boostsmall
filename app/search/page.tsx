@@ -8,6 +8,8 @@ import { BusinessCard } from "@/components/business/business-card";
 import { MapPin, Search } from "@/components/icons";
 import { ResultsMap } from "@/components/search/results-map";
 import { SearchInteractions } from "@/components/search/search-interactions";
+import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
 import { SAMPLE_BUSINESSES, type Category } from "@/lib/sample-businesses";
 import { categoryLabel, priceLabel } from "@/lib/format";
 import { HOUSTON_METRO } from "@/lib/cities";
@@ -69,6 +71,18 @@ export default async function SearchPage({
   const lng = params.lng ? parseFloat(params.lng) : null;
   const radius = params.radius ? parseInt(params.radius, 10) : 10;
   const usingLocation = lat !== null && lng !== null;
+
+  // Fetch the signed-in user's bookmarks so cards can render a filled
+  // heart for the ones they've saved.
+  const session = await auth();
+  let bookmarkedSlugs: Set<string> = new Set();
+  if (session?.user?.id) {
+    const bms = await db.bookmark.findMany({
+      where: { userId: session.user.id },
+      select: { business: { select: { slug: true } } },
+    });
+    bookmarkedSlugs = new Set(bms.map((b) => b.business.slug));
+  }
 
   let results = SAMPLE_BUSINESSES.map((b) => ({
     business: b,
@@ -351,7 +365,11 @@ export default async function SearchPage({
             <div className="grid sm:grid-cols-2 gap-6">
               {results.map(({ business: b, distance }) => (
                 <div key={b.slug} className="relative">
-                  <BusinessCard business={b} />
+                  <BusinessCard
+                    business={b}
+                    bookmarked={bookmarkedSlugs.has(b.slug)}
+                    bookmarkRedirectTo={buildHref(params, {})}
+                  />
                   {distance !== null && (
                     <span className="absolute top-3 left-3 z-10 rounded-full bg-ink/80 text-white text-xs font-bold px-2.5 py-1 backdrop-blur-sm tnum">
                       {formatDistanceMiles(distance)}
