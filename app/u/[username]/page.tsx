@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { RatingStars } from "@/components/review/rating-stars";
+import { relativeTime } from "@/lib/format";
 
 export async function generateMetadata({
   params,
@@ -45,6 +47,38 @@ export default async function UserProfilePage({
   ]);
 
   if (!profile || !profile.username) notFound();
+
+  // Fetch the user's published reviews with the business they're on.
+  const reviews = await db.review.findMany({
+    where: { userId: profile.id, status: "PUBLISHED" },
+    orderBy: { createdAt: "desc" },
+    take: 50,
+    select: {
+      id: true,
+      rating: true,
+      body: true,
+      createdAt: true,
+      helpfulCount: true,
+      ownerResponse: true,
+      ownerResponseAt: true,
+      business: {
+        select: {
+          slug: true,
+          name: true,
+          city: true,
+          state: true,
+          subcategory: true,
+          category: true,
+          photos: {
+            where: { reviewId: null },
+            orderBy: { createdAt: "desc" },
+            take: 1,
+            select: { url: true },
+          },
+        },
+      },
+    },
+  });
 
   const isOwn = session?.user?.id === profile.id;
   const initial = (profile.name?.[0] ?? profile.username[0] ?? "?").toUpperCase();
@@ -116,7 +150,7 @@ export default async function UserProfilePage({
         <div className="mt-12 grid lg:grid-cols-[1fr_320px] gap-10">
           <div>
             <h2 className="font-display text-2xl text-ink mb-6">Reviews</h2>
-            {profile._count.reviews === 0 ? (
+            {reviews.length === 0 ? (
               <div className="rounded-2xl border border-border bg-surface p-10 text-center">
                 <p className="text-ink-soft">
                   {isOwn
@@ -130,9 +164,56 @@ export default async function UserProfilePage({
                 )}
               </div>
             ) : (
-              <p className="text-ink-soft text-sm">
-                Review listing renders once Phase 2 is built.
-              </p>
+              <ul className="space-y-5">
+                {reviews.map((r) => (
+                  <li
+                    key={r.id}
+                    className="rounded-2xl border border-border bg-surface overflow-hidden"
+                  >
+                    <Link
+                      href={`/b/${r.business.slug}#review-${r.id}`}
+                      className="block hover:bg-background-soft transition-colors"
+                    >
+                      <div className="flex gap-4 p-5">
+                        {r.business.photos[0] && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={r.business.photos[0].url}
+                            alt=""
+                            className="h-20 w-20 rounded-xl object-cover shrink-0"
+                          />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="font-bold text-ink leading-tight">
+                                {r.business.name}
+                              </p>
+                              <p className="text-xs text-ink-soft mt-0.5">
+                                {r.business.subcategory ?? r.business.category} ·{" "}
+                                {r.business.city}, {r.business.state}
+                              </p>
+                            </div>
+                            <RatingStars rating={r.rating} size="sm" />
+                          </div>
+                          <p className="mt-3 text-sm text-ink leading-relaxed line-clamp-3">
+                            {r.body}
+                          </p>
+                          <p className="mt-2 text-xs text-ink-soft">
+                            {relativeTime(r.createdAt.toISOString())}
+                            {r.helpfulCount > 0 && (
+                              <> · {r.helpfulCount} found this helpful</>
+                            )}
+                            {r.ownerResponse && (
+                              <> · <span className="text-sage-deep font-semibold">owner replied</span></>
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
 
