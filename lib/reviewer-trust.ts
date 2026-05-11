@@ -290,6 +290,33 @@ export async function getSpecialties(userId: string): Promise<Specialty[]> {
   return SPECIALTIES.filter((s) => earnedKeys.has(s.key));
 }
 
+// ─── Review weighting ──────────────────────────────────────────────────────
+// Combines reviewer trust, helpful votes, and recency into one score used
+// to sort reviews on /b/[slug]. Higher = surfaced higher.
+//
+// Shape (intuition):
+//   trustFactor    ranges ~0.5–4.0 (a New Neighbor is ~1.0; Local Champion ~4)
+//   helpfulFactor  1 + helpfulCount / 10  (10 votes ~doubles the weight)
+//   recencyFactor  exp(-ageDays / 180)    (half-weight at ~125 days, ~1/10 at a year)
+//
+// Mock reviews with no trust score get a neutral 1.0 baseline so they fall
+// after real-but-fresh reviews and before stale anonymous ones.
+
+export interface WeightInputs {
+  /** undefined for mock seed reviews; treated as a neutral baseline. */
+  trustScore?: number | null;
+  helpfulCount: number;
+  ageDays: number;
+}
+
+export function reviewWeight(w: WeightInputs): number {
+  const trustFactor =
+    w.trustScore == null ? 1 : 0.5 + Math.sqrt(w.trustScore) / 5;
+  const helpfulFactor = 1 + w.helpfulCount / 10;
+  const recencyFactor = Math.exp(-Math.max(0, w.ageDays) / 180);
+  return trustFactor * helpfulFactor * recencyFactor;
+}
+
 // ─── Public-facing signals on the profile page ─────────────────────────────
 // We don't show the raw score; we show the activity that earned it.
 

@@ -29,7 +29,7 @@ import {
   reportReviewAction,
 } from "@/server/actions/review-feedback";
 import { toggleBookmarkAction } from "@/server/actions/bookmark";
-import { tierForScore } from "@/lib/reviewer-trust";
+import { tierForScore, reviewWeight } from "@/lib/reviewer-trust";
 import { ReviewerBadge } from "@/components/review/reviewer-badge";
 
 export async function generateMetadata({
@@ -131,7 +131,21 @@ export default async function BusinessDetailPage({
     photoUrls: [] as string[],
     authorTrustScore: undefined as number | undefined,
   }));
-  const reviews = [...realReviews, ...mockReviews];
+
+  // Weighted sort: trust × helpful × recency. Real, recent, well-voted
+  // reviews from trusted neighbors surface first; mocks settle behind.
+  const now = Date.now();
+  const reviews = [...realReviews, ...mockReviews]
+    .map((r) => ({
+      r,
+      w: reviewWeight({
+        trustScore: r.authorTrustScore ?? null,
+        helpfulCount: r.helpfulCount,
+        ageDays: (now - new Date(r.createdAt).getTime()) / 86_400_000,
+      }),
+    }))
+    .sort((a, b) => b.w - a.w)
+    .map((x) => x.r);
 
   // Real review IDs — only these support the owner-response form (mocks
   // don't exist in the DB so the action would fail).
