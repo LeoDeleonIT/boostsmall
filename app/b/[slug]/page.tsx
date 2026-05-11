@@ -24,6 +24,10 @@ import {
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { submitOwnerResponseAction } from "@/server/actions/respond";
+import {
+  toggleHelpfulAction,
+  reportReviewAction,
+} from "@/server/actions/review-feedback";
 
 export async function generateMetadata({
   params,
@@ -48,10 +52,15 @@ export default async function BusinessDetailPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ reviewed?: string; responded?: string; error?: string }>;
+  searchParams: Promise<{
+    reviewed?: string;
+    responded?: string;
+    reported?: string;
+    error?: string;
+  }>;
 }) {
   const { slug } = await params;
-  const { reviewed, responded, error } = await searchParams;
+  const { reviewed, responded, reported, error } = await searchParams;
   const business = findBusinessBySlug(slug);
   if (!business) notFound();
 
@@ -117,6 +126,30 @@ export default async function BusinessDetailPage({
   const isOwner =
     !!session?.user?.id &&
     !!dbBusiness?.owners.some((o) => o.userId === session.user.id);
+
+  // Which DB reviews has the current user marked helpful / reported? We use
+  // these to highlight the buttons and prevent duplicate reports.
+  const userHelpfulIds = new Set<string>();
+  const userReportedIds = new Set<string>();
+  if (session?.user?.id && realReviewIds.size > 0) {
+    const reviewIds = [...realReviewIds];
+    const [helpful, reports] = await Promise.all([
+      db.reviewHelpful.findMany({
+        where: { userId: session.user.id, reviewId: { in: reviewIds } },
+        select: { reviewId: true },
+      }),
+      db.moderationFlag.findMany({
+        where: {
+          targetType: "REVIEW",
+          targetId: { in: reviewIds },
+          reportedById: session.user.id,
+        },
+        select: { targetId: true },
+      }),
+    ]);
+    for (const h of helpful) userHelpfulIds.add(h.reviewId);
+    for (const r of reports) userReportedIds.add(r.targetId);
+  }
   const heroPhoto = photoUrls[0];
   const otherPhotos = photoUrls.slice(1, 5);
   const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
@@ -243,6 +276,16 @@ export default async function BusinessDetailPage({
               ✓ Your response is posted under the review.
             </div>
           )}
+          {reported === "1" && (
+            <div className="mb-6 rounded-2xl border border-sage/40 bg-sage/10 p-4 text-sm text-sage-deep">
+              ✓ Report sent. A moderator will take a look.
+            </div>
+          )}
+          {reported === "already" && (
+            <div className="mb-6 rounded-2xl border border-ink/20 bg-ink/5 p-4 text-sm text-ink-soft">
+              You already reported this review — it&apos;s in the queue.
+            </div>
+          )}
           {error === "owner-cant-review" && (
             <div className="mb-6 rounded-2xl border border-terracotta/40 bg-terracotta/10 p-4 text-sm text-terracotta-deep">
               Verified owners can&apos;t review their own business. Reply to
@@ -273,7 +316,8 @@ export default async function BusinessDetailPage({
               {reviews.map((r) => (
                 <li
                   key={r.id}
-                  className="rounded-2xl border border-border bg-surface p-6"
+                  id={`review-${r.id}`}
+                  className="rounded-2xl border border-border bg-surface p-6 scroll-mt-24"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div>
@@ -339,19 +383,65 @@ export default async function BusinessDetailPage({
                   )}
 
                   <div className="mt-4 flex items-center gap-3 text-xs text-ink-soft">
-                    <button
-                      type="button"
-                      className="inline-flex items-center gap-1 hover:text-ink"
-                    >
-                      Helpful ({r.helpfulCount})
-                    </button>
-                    <span>·</span>
-                    <button
-                      type="button"
-                      className="hover:text-ink"
-                    >
-                      Report
-                    </button>
+                    {realReviewIds.has(r.id) ? (
+                      <>
+                        <form action={toggleHelpfulAction} className="inline">
+                          <input type="hidden" name="reviewId" value={r.id} />
+                          <input type="hidden" name="businessSlug" value={business.slug} />
+                          <button
+                            type="submit"
+                            className={
+                              userHelpfulIds.has(r.id)
+                                ? "inline-flex items-center gap-1 font-bold text-terracotta-deep"
+                                : "inline-flex items-center gap-1 hover:text-ink"
+                            }
+                            aria-pressed={userHelpfulIds.has(r.id)}
+                          >
+                            {userHelpfulIds.has(r.id) ? "✓ Helpful" : "Helpful"} ({r.helpfulCount})
+                          </button>
+                        </form>
+                        <span>·</span>
+                        {userReportedIds.has(r.id) ? (
+                          <span className="italic">Reported · admin reviewing</span>
+                        ) : (
+                          <details className="inline group">
+                            <summary className="cursor-pointer list-none hover:text-ink select-none">
+                              Report
+                            </summary>
+                            <form
+                              action={reportReviewAction}
+                              className="mt-2 inline-flex items-center gap-2"
+                            >
+                              <input type="hidden" name="reviewId" value={r.id} />
+                              <input type="hidden" name="businessSlug" value={business.slug} />
+                              <select
+                                name="reason"
+                                defaultValue="off-topic"
+                                className="rounded-full border border-border-strong bg-surface px-2 h-7 text-xs"
+                              >
+                                <option value="off-topic">Off-topic</option>
+                                <option value="harassment">Harassment / personal attack</option>
+                                <option value="fake">Looks fake / paid</option>
+                                <option value="conflict">Conflict of interest</option>
+                                <option value="other">Other</option>
+                              </select>
+                              <button
+                                type="submit"
+                                className="rounded-full bg-terracotta/10 text-terracotta-deep px-3 h-7 font-bold hover:bg-terracotta/20"
+                              >
+                                Send report
+                              </button>
+                            </form>
+                          </details>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <span className="opacity-60">Helpful ({r.helpfulCount})</span>
+                        <span>·</span>
+                        <span className="opacity-60">Report</span>
+                      </>
+                    )}
                   </div>
                 </li>
               ))}

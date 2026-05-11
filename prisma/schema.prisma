@@ -130,6 +130,7 @@ model User {
   approvedBusinesses  Business[] @relation("ApprovedBusinesses")
   reportedFlags       ModerationFlag[] @relation("ReportedFlags")
   resolvedFlags       ModerationFlag[] @relation("ResolvedFlags")
+  helpfulVotes        ReviewHelpful[]
   addedChainEntries   ChainBlocklist[]
 
   @@index([username])
@@ -217,10 +218,28 @@ model Review {
   user     User     @relation(fields: [userId],     references: [id], onDelete: Cascade)
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
   photos   Photo[]
+  helpfulVotes ReviewHelpful[]
 
   @@unique([userId, businessId]) // one review per user per business
   @@index([businessId, status, createdAt])
   @@index([userId, createdAt])
+}
+
+// One row per (user, review) "helpful" vote. Toggle insert/delete in a
+// transaction with Review.helpfulCount so the count stays consistent and
+// each user can only vote once.
+model ReviewHelpful {
+  id        String   @id @default(cuid())
+  userId    String
+  reviewId  String
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId],   references: [id], onDelete: Cascade)
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, reviewId])
+  @@index([reviewId])
+  @@index([userId])
 }
 
 model Photo {
