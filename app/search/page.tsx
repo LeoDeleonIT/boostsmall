@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { BusinessCard } from "@/components/business/business-card";
 import { MapPin, Search } from "@/components/icons";
+import { ResultsMap } from "@/components/search/results-map";
 import { SAMPLE_BUSINESSES, type Category } from "@/lib/sample-businesses";
 import { categoryLabel, priceLabel } from "@/lib/format";
 import { HOUSTON_METRO } from "@/lib/cities";
@@ -247,7 +248,7 @@ export default async function SearchPage({
       </section>
 
       {/* MAIN GRID */}
-      <section className="mx-auto max-w-[1400px] px-6 py-10 grid lg:grid-cols-[260px_1fr] gap-10">
+      <section className="mx-auto max-w-[1500px] px-6 py-10 grid lg:grid-cols-[220px_1fr_400px] gap-8">
         {/* SIDEBAR */}
         <aside className="space-y-6">
           <div>
@@ -405,7 +406,7 @@ export default async function SearchPage({
               </p>
             </div>
           ) : (
-            <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div className="grid sm:grid-cols-2 gap-6">
               {results.map(({ business: b, distance }) => (
                 <div key={b.slug} className="relative">
                   <BusinessCard business={b} />
@@ -418,6 +419,30 @@ export default async function SearchPage({
               ))}
             </div>
           )}
+        </div>
+
+        {/* MAP COLUMN — sticky on lg+, hidden on mobile to keep the page light.
+            `lg:block!` because Tailwind v4 in this codebase emits `.hidden` at
+            top level (outside @layer utilities), so `lg:block` would otherwise
+            lose the cascade. */}
+        <div className="hidden lg:block!">
+          <div className="sticky top-6 rounded-2xl overflow-hidden border border-border-strong bg-surface shadow-sm">
+            <ResultsMap
+              pins={results
+                .filter(({ business: b }) => b.lat && b.lng)
+                .map(({ business: b }) => ({
+                  slug: b.slug,
+                  name: b.name,
+                  lat: b.lat,
+                  lng: b.lng,
+                  rating: b.rating,
+                  subcategory: b.subcategory,
+                }))}
+              userLocation={usingLocation ? { lat: lat!, lng: lng! } : null}
+              radiusMiles={usingLocation ? radius : null}
+              className="h-[calc(100vh-3rem)] w-full"
+            />
+          </div>
         </div>
       </section>
 
