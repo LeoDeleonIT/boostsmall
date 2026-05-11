@@ -60,6 +60,10 @@ export async function UserNav({ variant = "light" }: UserNavProps) {
         </Link>
       )}
 
+      <Link href="/u/saved" className={cn(linkClass, "hidden sm:inline")}>
+        Saved
+      </Link>
+
       <Link
         href={u.username ? `/u/${u.username}` : "/"}
         className="inline-flex items-center gap-2.5 group"

@@ -131,6 +131,7 @@ model User {
   reportedFlags       ModerationFlag[] @relation("ReportedFlags")
   resolvedFlags       ModerationFlag[] @relation("ResolvedFlags")
   helpfulVotes        ReviewHelpful[]
+  bookmarks           Bookmark[]
   addedChainEntries   ChainBlocklist[]
 
   @@index([username])
@@ -177,6 +178,7 @@ model Business {
   reviews   Review[]
   photos    Photo[]
   owners    BusinessOwner[]
+  bookmarks Bookmark[]
 
   @@index([status])
   @@index([category])
@@ -222,6 +224,21 @@ model Review {
 
   @@unique([userId, businessId]) // one review per user per business
   @@index([businessId, status, createdAt])
+  @@index([userId, createdAt])
+}
+
+// Private "save for later" list. One row per (user, business). Plenty of
+// users in one business won't compete on writes since there's no count.
+model Bookmark {
+  id         String   @id @default(cuid())
+  userId     String
+  businessId String
+  createdAt  DateTime @default(now())
+
+  user     User     @relation(fields: [userId],     references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, businessId])
   @@index([userId, createdAt])
 }
 

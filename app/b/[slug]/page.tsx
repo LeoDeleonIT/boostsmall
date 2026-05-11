@@ -28,6 +28,7 @@ import {
   toggleHelpfulAction,
   reportReviewAction,
 } from "@/server/actions/review-feedback";
+import { toggleBookmarkAction } from "@/server/actions/bookmark";
 
 export async function generateMetadata({
   params,
@@ -134,6 +135,27 @@ export default async function BusinessDetailPage({
   const isOwner =
     !!session?.user?.id &&
     !!dbBusiness?.owners.some((o) => o.userId === session.user.id);
+
+  // Is the current user bookmarking this business?
+  let isBookmarked = false;
+  if (session?.user?.id) {
+    const businessRow = await db.business.findUnique({
+      where: { slug },
+      select: { id: true },
+    });
+    if (businessRow) {
+      const bm = await db.bookmark.findUnique({
+        where: {
+          userId_businessId: {
+            userId: session.user.id,
+            businessId: businessRow.id,
+          },
+        },
+        select: { id: true },
+      });
+      isBookmarked = !!bm;
+    }
+  }
 
   // Which DB reviews has the current user marked helpful / reported? We use
   // these to highlight the buttons and prevent duplicate reports.
@@ -249,11 +271,41 @@ export default async function BusinessDetailPage({
             </div>
 
             <div className="flex flex-col gap-2 w-full md:w-auto">
-              <Button variant="warm" size="lg" asChild>
-                <Link href={`/b/${business.slug}/review`}>
-                  Write a review
-                </Link>
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="warm" size="lg" asChild className="flex-1 md:flex-initial">
+                  <Link href={`/b/${business.slug}/review`}>
+                    Write a review
+                  </Link>
+                </Button>
+                <form action={toggleBookmarkAction} className="shrink-0">
+                  <input type="hidden" name="businessSlug" value={business.slug} />
+                  <button
+                    type="submit"
+                    aria-pressed={isBookmarked}
+                    aria-label={isBookmarked ? "Remove from saved" : "Save for later"}
+                    title={isBookmarked ? "Remove from saved" : "Save for later"}
+                    className={
+                      isBookmarked
+                        ? "inline-flex items-center justify-center h-12 w-12 rounded-2xl border border-terracotta text-terracotta-deep bg-terracotta/10 hover:bg-terracotta/15 transition-colors"
+                        : "inline-flex items-center justify-center h-12 w-12 rounded-2xl border border-border-strong bg-surface text-ink-soft hover:text-terracotta-deep hover:border-terracotta transition-colors"
+                    }
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="22"
+                      height="22"
+                      fill={isBookmarked ? "currentColor" : "none"}
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                    </svg>
+                  </button>
+                </form>
+              </div>
               <Button variant="outline" size="lg" asChild>
                 <a href={directionsUrl} target="_blank" rel="noreferrer">
                   Get directions
