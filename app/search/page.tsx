@@ -52,6 +52,8 @@ interface SearchParams {
   lng?: string;
   radius?: string;
   error?: string;
+  /** Layout mode: split = filters · 2-col results · map; list = filters · 3-col results (no map). */
+  view?: "split" | "list";
 }
 
 export default async function SearchPage({
@@ -71,6 +73,7 @@ export default async function SearchPage({
   const lng = params.lng ? parseFloat(params.lng) : null;
   const radius = params.radius ? parseInt(params.radius, 10) : 10;
   const usingLocation = lat !== null && lng !== null;
+  const view: "split" | "list" = params.view === "list" ? "list" : "split";
 
   // Fetch the signed-in user's bookmarks so cards can render a filled
   // heart for the ones they've saved.
@@ -240,9 +243,9 @@ export default async function SearchPage({
         </div>
       </section>
 
-      {/* CATEGORY CHIPS */}
+      {/* CATEGORY CHIPS + VIEW TOGGLE */}
       <section className="border-b border-border bg-background">
-        <div className="mx-auto max-w-[1400px] px-6 py-4 flex flex-wrap gap-2">
+        <div className="mx-auto max-w-[1400px] px-6 py-4 flex flex-wrap items-center gap-2">
           {ALL_CATEGORIES.map((c) => {
             const href = buildHref(params, { category: c });
             const isActive = c === category;
@@ -260,11 +263,53 @@ export default async function SearchPage({
               </Link>
             );
           })}
+
+          {/* View toggle — visible only at lg+ where the map column matters. */}
+          <div className="ml-auto hidden lg:inline-flex items-center rounded-full border border-border-strong bg-surface p-0.5 text-xs font-bold">
+            <Link
+              href={buildHref(params, { view: undefined })}
+              className={
+                view === "split"
+                  ? "inline-flex items-center gap-1.5 rounded-full bg-sage text-white px-3 py-1"
+                  : "inline-flex items-center gap-1.5 rounded-full text-ink-soft px-3 py-1 hover:text-ink"
+              }
+              title="Split view: results + map side-by-side"
+            >
+              <svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor" aria-hidden>
+                <rect x="1" y="2" width="6" height="12" rx="1" />
+                <rect x="9" y="2" width="6" height="12" rx="1" opacity="0.55" />
+              </svg>
+              Split
+            </Link>
+            <Link
+              href={buildHref(params, { view: "list" })}
+              className={
+                view === "list"
+                  ? "inline-flex items-center gap-1.5 rounded-full bg-sage text-white px-3 py-1"
+                  : "inline-flex items-center gap-1.5 rounded-full text-ink-soft px-3 py-1 hover:text-ink"
+              }
+              title="List view: more cards, no map"
+            >
+              <svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor" aria-hidden>
+                <rect x="1" y="2" width="14" height="3" rx="1" />
+                <rect x="1" y="6.5" width="14" height="3" rx="1" />
+                <rect x="1" y="11" width="14" height="3" rx="1" />
+              </svg>
+              List
+            </Link>
+          </div>
         </div>
       </section>
 
-      {/* MAIN GRID */}
-      <section className="mx-auto max-w-[1500px] px-6 py-10 grid lg:grid-cols-[220px_1fr_400px] gap-8">
+      {/* MAIN GRID — split shows filters · results · map. List drops the
+          map and lets the results column take the leftover width. */}
+      <section
+        className={
+          view === "list"
+            ? "mx-auto max-w-[1500px] px-6 py-10 grid lg:grid-cols-[220px_1fr] gap-8"
+            : "mx-auto max-w-[1500px] px-6 py-10 grid lg:grid-cols-[220px_1fr_400px] gap-8"
+        }
+      >
         {/* SIDEBAR — collapsed by default on mobile (below results),
             full sidebar at lg+ */}
         <aside className="space-y-6 order-2 lg:order-1">
@@ -362,7 +407,13 @@ export default async function SearchPage({
               </p>
             </div>
           ) : (
-            <div className="grid sm:grid-cols-2 gap-6">
+            <div
+              className={
+                view === "list"
+                  ? "grid sm:grid-cols-2 lg:grid-cols-3 gap-6"
+                  : "grid sm:grid-cols-2 gap-6"
+              }
+            >
               {results.map(({ business: b, distance }) => (
                 <div key={b.slug} className="relative">
                   <BusinessCard
@@ -381,10 +432,11 @@ export default async function SearchPage({
           )}
         </div>
 
-        {/* MAP COLUMN — sticky on lg+, hidden on mobile to keep the page
-            light. Explicit `lg:order-3` because the aside/results pair use
+        {/* MAP COLUMN — sticky on lg+, hidden on mobile and in list view.
+            Explicit `lg:order-3` because the aside/results pair use
             order-1/order-2 to swap on mobile, and without this the map
             would default to order:0 and land in the 220px filter slot. */}
+        {view === "split" && (
         <div className="hidden lg:block lg:order-3">
           <div className="sticky top-6 rounded-2xl overflow-hidden border border-border-strong bg-surface shadow-sm">
             <ResultsMap
@@ -404,6 +456,7 @@ export default async function SearchPage({
             />
           </div>
         </div>
+        )}
       </section>
 
       <SiteFooter />
