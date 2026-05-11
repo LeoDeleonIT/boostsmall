@@ -20,6 +20,9 @@ export interface Tier {
   blurb: string;
   threshold: number;
   emoji: string;
+  /** Optional path under /public. ReviewerBadge swaps from emoji to image
+   * when present (and falls back to emoji if the file 404s). */
+  image?: string;
   // Tailwind utility classes for the pill (bg + text + border).
   pillClass: string;
 }
@@ -31,6 +34,7 @@ export const TIERS: readonly Tier[] = [
     blurb: "Just joined the block.",
     threshold: 0,
     emoji: "🌱",
+    image: "/badges/new-neighbor.png",
     pillClass: "bg-sage/10 text-sage-deep border-sage/30",
   },
   {
@@ -39,6 +43,7 @@ export const TIERS: readonly Tier[] = [
     blurb: "Showing up for the neighborhood.",
     threshold: 25,
     emoji: "🌿",
+    image: "/badges/local-supporter.png",
     pillClass: "bg-sage/15 text-sage-deep border-sage/40",
   },
   {
@@ -47,6 +52,7 @@ export const TIERS: readonly Tier[] = [
     blurb: "Reviews you can take to the bank.",
     threshold: 100,
     emoji: "🪴",
+    image: "/badges/trusted-regular.png",
     pillClass: "bg-sage/20 text-sage-deep border-sage/50",
   },
   {
@@ -55,6 +61,7 @@ export const TIERS: readonly Tier[] = [
     blurb: "Knows every block, every patio.",
     threshold: 280,
     emoji: "🌳",
+    image: "/badges/neighborhood-guide.png",
     pillClass: "bg-terracotta/10 text-terracotta-deep border-terracotta/40",
   },
   {
@@ -63,6 +70,7 @@ export const TIERS: readonly Tier[] = [
     blurb: "Other neighbors learn from their picks.",
     threshold: 700,
     emoji: "🏪",
+    image: "/badges/community-favorite.png",
     pillClass: "bg-terracotta/15 text-terracotta-deep border-terracotta/50",
   },
   {
@@ -71,6 +79,7 @@ export const TIERS: readonly Tier[] = [
     blurb: "Earned every recommendation over years.",
     threshold: 1500,
     emoji: "🌳",
+    image: "/badges/local-champion.png",
     pillClass: "bg-terracotta/25 text-terracotta-deep border-terracotta",
   },
 ] as const;

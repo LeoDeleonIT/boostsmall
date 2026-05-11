@@ -53,7 +53,7 @@ export default function TrustPage() {
                   key={t.key}
                   className="rounded-2xl border border-border bg-surface p-5 flex flex-col sm:flex-row sm:items-center gap-4"
                 >
-                  <ReviewerBadge tier={t} size="md" link={false} className="self-start sm:self-center shrink-0" />
+                  <ReviewerBadge tier={t} size="lg" link={false} className="self-start sm:self-center shrink-0" />
                   <p className="text-sm text-ink leading-relaxed">{t.blurb}</p>
                 </li>
               ))}
