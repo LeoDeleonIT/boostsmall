@@ -2823,6 +2823,24 @@ function brandKey(b: SampleBusiness): string {
   return b.name.split(/\s+[–-]\s+/)[0].toLowerCase();
 }
 
+// Round-robin spread: pulls one entry of each brand at a time. So a list
+// where Trinity Dental has 16 locations and 100 other brands don't get
+// dominated — Trinity's 16 land in slots 1, 17, 33, 49… instead of 1-16.
+// Preserves the relative order WITHIN each brand (so if input is sorted
+// by rating, the best Trinity still leads the next Trinity).
+export function spreadByBrand<T extends SampleBusiness>(businesses: T[]): T[] {
+  const counts = new Map<string, number>();
+  return [...businesses]
+    .map((b, i) => {
+      const key = brandKey(b);
+      const pos = counts.get(key) ?? 0;
+      counts.set(key, pos + 1);
+      return { b, pos, i };
+    })
+    .sort((a, b) => a.pos - b.pos || a.i - b.i)
+    .map((x) => x.b);
+}
+
 export function dedupeByBrand(businesses: SampleBusiness[]): SampleBusiness[] {
   const best = new Map<string, SampleBusiness>();
   for (const b of businesses) {

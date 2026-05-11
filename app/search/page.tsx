@@ -10,7 +10,7 @@ import { ResultsMap } from "@/components/search/results-map";
 import { SearchInteractions } from "@/components/search/search-interactions";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { SAMPLE_BUSINESSES, type Category } from "@/lib/sample-businesses";
+import { SAMPLE_BUSINESSES, spreadByBrand, type Category } from "@/lib/sample-businesses";
 import { categoryLabel, priceLabel } from "@/lib/format";
 import { HOUSTON_METRO } from "@/lib/cities";
 import { haversineMiles, formatDistanceMiles } from "@/lib/distance";
@@ -141,6 +141,20 @@ export default async function SearchPage({
         results.sort((a, b) => b.business.reviewCount - a.business.reviewCount);
         break;
     }
+  }
+
+  // Brand interleave so a 16-location brand can't take the first 16 slots.
+  // Skipped when the user is location-sorted (closest-first) — there,
+  // proximity to the user is the whole point. Also skipped when the user
+  // typed a search query targeting a specific brand.
+  if (!usingLocation && !q) {
+    const spread = spreadByBrand(results.map((r) => r.business));
+    const slugToIndex = new Map(spread.map((b, i) => [b.slug, i]));
+    results.sort(
+      (a, b) =>
+        (slugToIndex.get(a.business.slug) ?? 0) -
+        (slugToIndex.get(b.business.slug) ?? 0)
+    );
   }
 
   return (
