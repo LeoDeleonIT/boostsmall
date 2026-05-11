@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { label: "Services",          href: "/search?category=SERVICES" },
   { label: "Arts",              href: "/search?category=ARTS" },
   { label: "Recommendations",   href: "/recommendations" },
+  { label: "Find your thing",   href: "/discover" },
 ];
 
 interface SiteHeaderProps {
