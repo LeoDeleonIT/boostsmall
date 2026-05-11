@@ -12,6 +12,7 @@ import { relativeTime } from "@/lib/format";
 import { publicTrustSnapshot, getSpecialties } from "@/lib/reviewer-trust";
 import { ReviewerBadge } from "@/components/review/reviewer-badge";
 import { SpecialtyBadge } from "@/components/review/specialty-badge";
+import { TierProgress } from "@/components/review/tier-progress";
 
 export async function generateMetadata({
   params,
@@ -120,16 +121,25 @@ export default async function UserProfilePage({
             <p className="text-ink-soft mt-1">@{profile.username} · joined {joined}</p>
 
             {trust && trust.reviewCount > 0 && (
-              <p className="mt-3 text-sm text-ink-soft max-w-[60ch]">
-                <span className="font-semibold text-ink">{trust.tier.label}</span>{" "}
-                — {trust.tier.blurb}{" "}
-                <Link
-                  href="/about/trust"
-                  className="text-terracotta-deep hover:underline underline-offset-4"
-                >
-                  How tiers work →
-                </Link>
-              </p>
+              <>
+                <p className="mt-3 text-sm text-ink-soft max-w-[60ch]">
+                  <span className="font-semibold text-ink">{trust.tier.label}</span>{" "}
+                  — {trust.tier.blurb}{" "}
+                  <Link
+                    href="/about/trust"
+                    className="text-terracotta-deep hover:underline underline-offset-4"
+                  >
+                    How tiers work →
+                  </Link>
+                </p>
+                <div className="mt-4 max-w-md">
+                  <TierProgress
+                    current={trust.tier}
+                    next={trust.next}
+                    progress={trust.progress}
+                  />
+                </div>
+              </>
             )}
 
             {profile.bio && (

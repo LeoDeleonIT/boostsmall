@@ -83,6 +83,24 @@ export function tierForScore(score: number): Tier {
   return TIERS[0];
 }
 
+// Returns the tier above the current one, or null if at the top.
+export function nextTier(score: number): Tier | null {
+  const current = tierForScore(score);
+  const idx = TIERS.findIndex((t) => t.key === current.key);
+  return idx >= 0 && idx < TIERS.length - 1 ? TIERS[idx + 1] : null;
+}
+
+// 0–1 progress between current tier's threshold and the next one's.
+// Returns 1 if already at the top tier (no further progress to make).
+export function progressToNext(score: number): number {
+  const current = tierForScore(score);
+  const next = nextTier(score);
+  if (!next) return 1;
+  const span = next.threshold - current.threshold;
+  if (span <= 0) return 1;
+  return Math.min(1, Math.max(0, (score - current.threshold) / span));
+}
+
 // ─── Score formula ─────────────────────────────────────────────────────────
 // Hidden from users (we surface the public tier, not the number). Weights
 // chosen so a thoughtful reviewer reaches "Trusted Regular" after ~5 quality
@@ -322,6 +340,9 @@ export function reviewWeight(w: WeightInputs): number {
 
 export interface PublicTrustSnapshot {
   tier: Tier;
+  next: Tier | null;
+  /** 0–1 progress between current tier's threshold and the next one's. */
+  progress: number;
   reviewCount: number;
   helpfulReceived: number;
   responsesEarned: number;
@@ -354,6 +375,8 @@ export async function publicTrustSnapshot(
 
   return {
     tier: tierForScore(u.trustScore),
+    next: nextTier(u.trustScore),
+    progress: progressToNext(u.trustScore),
     reviewCount: reviews.length,
     helpfulReceived: reviews.reduce((acc, r) => acc + r.helpfulCount, 0),
     responsesEarned: reviews.filter((r) => r.ownerResponse).length,
