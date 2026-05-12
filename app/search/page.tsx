@@ -150,11 +150,13 @@ export default async function SearchPage({
   if (!usingLocation && !q) {
     let spread = spreadByBrand(results.map((r) => r.business));
     // Demote dentistry on the unfiltered "all" view — there are 25 dental
-    // listings and they were dominating the first page. Skipped when the
-    // user has actually clicked the Health & Wellness category, since
-    // that's an explicit ask for them.
+    // listings and they were dominating the first page. We keep just one
+    // (the featured Pearl Humble) at slot 3 and push the rest of the
+    // dentists, including all 16 Trinity locations, to the end. Skipped
+    // when the user has actually clicked Health & Wellness — that's an
+    // explicit ask for the category.
     if (category === "ALL") {
-      spread = capCategory(spread, "HEALTH_BEAUTY", 3);
+      spread = capCategory(spread, "HEALTH_BEAUTY", 1);
     }
     const slugToIndex = new Map(spread.map((b, i) => [b.slug, i]));
     results.sort(

@@ -35,6 +35,11 @@ export interface SampleBusiness {
   ownerVerified?: boolean;
   needsReview?: string;
   recentlyAdded?: boolean;
+  // When true, this listing is the chosen face for its category on
+  // unfiltered pages — capCategory pins it to its keep slot, and
+  // dedupeByBrand picks it as the brand rep even if another location
+  // is rated higher.
+  featured?: boolean;
 }
 
 const RESTAURANT_HOURS = {
@@ -101,6 +106,7 @@ interface DentalLocation {
   rating: number;
   reviewCount: number;
   recentlyAdded?: boolean;
+  featured?: boolean;
 }
 
 const TRINITY_DENTAL_GROUP: DentalLocation[] = [
@@ -124,7 +130,7 @@ const TRINITY_DENTAL_GROUP: DentalLocation[] = [
 
 const PEARL_DENTISTRY_GROUP: DentalLocation[] = [
   { loc: "Houston Heights", addressLine1: "1919 Taylor St",                  city: "Houston", postalCode: "77007", phone: "+1-713-766-4389", lat: 29.775543, lng: -95.383428, rating: 4.8, reviewCount: 134, recentlyAdded: true },
-  { loc: "Humble",          addressLine1: "11501 N Sam Houston Pkwy Ste C",  city: "Humble",  postalCode: "77396", phone: "+1-346-476-0627", lat: 29.935237, lng: -95.215203, rating: 4.7, reviewCount: 87,  recentlyAdded: true },
+  { loc: "Humble",          addressLine1: "11501 N Sam Houston Pkwy Ste C",  city: "Humble",  postalCode: "77396", phone: "+1-346-476-0627", lat: 29.935237, lng: -95.215203, rating: 4.7, reviewCount: 87,  recentlyAdded: true, featured: true },
 ];
 
 function dentalSlug(brand: string, loc: string): string {
@@ -168,6 +174,7 @@ function makeDentalEntry(
     reviewCount: t.reviewCount,
     ownerVerified: true,
     recentlyAdded: t.recentlyAdded,
+    featured: t.featured,
   };
 }
 
@@ -3453,23 +3460,28 @@ export function dedupeByBrand(businesses: SampleBusiness[]): SampleBusiness[] {
   for (const b of businesses) {
     const key = brandKey(b);
     const cur = best.get(key);
-    if (
+    // Featured wins outright — it's the location we want to surface
+    // regardless of which sibling has the highest rating. Otherwise
+    // pick by rating, then review count.
+    const wins =
       !cur ||
-      b.rating > cur.rating ||
-      (b.rating === cur.rating && b.reviewCount > cur.reviewCount)
-    ) {
-      best.set(key, b);
-    }
+      (b.featured && !cur.featured) ||
+      (b.featured === cur.featured &&
+        (b.rating > cur.rating ||
+          (b.rating === cur.rating && b.reviewCount > cur.reviewCount)));
+    if (wins) best.set(key, b);
   }
   return [...best.values()];
 }
 
 // Demotes an over-represented category in the unfiltered "all" view.
-// Sprinkles the top `keep` entries of `category` at evenly-spaced
-// positions among the rest, then pushes overflow to the end. So a
-// category with 25 listings (dentists) doesn't take over the first
-// page when the user isn't asking for it. Within-group order is
-// preserved — callers should have already sorted/spread.
+// Keeps `keep` entries of `category` near the front and pushes overflow
+// to the end. So a category with 25 listings (dentists) doesn't take
+// over the first page when the user isn't asking for it. Any in-category
+// item with `featured: true` is moved to slot 0 of the keep list and
+// pinned at position 2 (0-indexed) — i.e. the 3rd card on the page —
+// so the chosen face for the category lands in a predictable spot.
+// Other kept items get sprinkled at step intervals after that.
 export function capCategory<T extends SampleBusiness>(
   businesses: T[],
   category: Category,
@@ -3480,29 +3492,40 @@ export function capCategory<T extends SampleBusiness>(
   for (const b of businesses) {
     (b.category === category ? inCat : rest).push(b);
   }
+  // Featured-first within the category so the kept slot goes to it.
+  inCat.sort((a, b) => Number(!!b.featured) - Number(!!a.featured));
   const kept = inCat.slice(0, keep);
   const overflow = inCat.slice(keep);
   if (kept.length === 0) return [...rest, ...overflow];
   if (rest.length === 0) return [...kept, ...overflow];
   const out: T[] = [...rest];
-  // Step caps at 6 so the kept items always land in the first couple of
-  // visible rows, not banished to position 30+ on a long list. Floor of 2
-  // keeps them from clumping together when `rest` is small.
+  // First kept item lands at the 3rd card (index 2) when there's a
+  // featured pick — that's a predictable spot. After that, step caps
+  // at 6 so additional kept items stay in the first couple of rows.
+  const hasFeatured = !!kept[0]?.featured;
+  const firstAt = hasFeatured ? 2 : Math.min(6, Math.max(2, Math.floor(rest.length / (kept.length + 1))));
   const step = Math.max(
     2,
     Math.min(6, Math.floor(rest.length / (kept.length + 1))),
   );
   for (let i = 0; i < kept.length; i++) {
-    const pos = Math.min(step * (i + 1) + i, out.length);
+    const basePos = i === 0 ? firstAt : firstAt + step * i;
+    const pos = Math.min(basePos + i, out.length);
     out.splice(pos, 0, kept[i]);
   }
   return [...out, ...overflow];
 }
 
 export function topRated(limit = 6): SampleBusiness[] {
+  // Sort rating-first so highest-rated leads. We do this *before*
+  // dedupeByBrand so featured locations still win their brand slot
+  // — the dedupe respects `featured` even if a sibling rates higher.
   const ranked = dedupeByBrand(SAMPLE_BUSINESSES).sort(
     (a, b) => b.rating - a.rating || b.reviewCount - a.reviewCount
   );
+  // Keep just 1 dental in the unfiltered top-rated strip — the featured
+  // Pearl Humble — and push the rest to the end so other categories
+  // get oxygen.
   return capCategory(ranked, "HEALTH_BEAUTY", 1).slice(0, limit);
 }
 
