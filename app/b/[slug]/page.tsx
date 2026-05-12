@@ -7,6 +7,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { RatingStars } from "@/components/review/rating-stars";
+import { ReviewPhotoGrid } from "@/components/review/review-photo-grid";
 import { MapPin } from "@/components/icons";
 import { MapboxMap } from "@/components/map/mapbox-map";
 import {
@@ -505,25 +506,7 @@ export default async function BusinessDetailPage({
                   <p className="mt-4 text-ink leading-relaxed">{r.body}</p>
 
                   {r.photoUrls.length > 0 && (
-                    <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      {r.photoUrls.map((url) => (
-                        <a
-                          key={url}
-                          href={url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="relative aspect-square overflow-hidden rounded-xl border border-border bg-ink/5"
-                        >
-                          <Image
-                            src={url}
-                            alt=""
-                            fill
-                            sizes="(min-width: 640px) 25vw, 50vw"
-                            className="object-cover hover:scale-[1.03] transition-transform"
-                          />
-                        </a>
-                      ))}
-                    </div>
+                    <ReviewPhotoGrid photoUrls={r.photoUrls} />
                   )}
 
                   {r.ownerResponse && (
