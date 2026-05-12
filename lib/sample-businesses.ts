@@ -3464,17 +3464,51 @@ export function dedupeByBrand(businesses: SampleBusiness[]): SampleBusiness[] {
   return [...best.values()];
 }
 
+// Demotes an over-represented category in the unfiltered "all" view.
+// Sprinkles the top `keep` entries of `category` at evenly-spaced
+// positions among the rest, then pushes overflow to the end. So a
+// category with 25 listings (dentists) doesn't take over the first
+// page when the user isn't asking for it. Within-group order is
+// preserved — callers should have already sorted/spread.
+export function capCategory<T extends SampleBusiness>(
+  businesses: T[],
+  category: Category,
+  keep: number,
+): T[] {
+  const inCat: T[] = [];
+  const rest: T[] = [];
+  for (const b of businesses) {
+    (b.category === category ? inCat : rest).push(b);
+  }
+  const kept = inCat.slice(0, keep);
+  const overflow = inCat.slice(keep);
+  if (kept.length === 0) return [...rest, ...overflow];
+  if (rest.length === 0) return [...kept, ...overflow];
+  const out: T[] = [...rest];
+  // Step caps at 6 so the kept items always land in the first couple of
+  // visible rows, not banished to position 30+ on a long list. Floor of 2
+  // keeps them from clumping together when `rest` is small.
+  const step = Math.max(
+    2,
+    Math.min(6, Math.floor(rest.length / (kept.length + 1))),
+  );
+  for (let i = 0; i < kept.length; i++) {
+    const pos = Math.min(step * (i + 1) + i, out.length);
+    out.splice(pos, 0, kept[i]);
+  }
+  return [...out, ...overflow];
+}
+
 export function topRated(limit = 6): SampleBusiness[] {
-  return dedupeByBrand(SAMPLE_BUSINESSES)
-    .sort((a, b) => b.rating - a.rating || b.reviewCount - a.reviewCount)
-    .slice(0, limit);
+  const ranked = dedupeByBrand(SAMPLE_BUSINESSES).sort(
+    (a, b) => b.rating - a.rating || b.reviewCount - a.reviewCount
+  );
+  return capCategory(ranked, "HEALTH_BEAUTY", 1).slice(0, limit);
 }
 
 export function recentlyAdded(limit = 6): SampleBusiness[] {
-  return dedupeByBrand(SAMPLE_BUSINESSES.filter((b) => b.recentlyAdded)).slice(
-    0,
-    limit
-  );
+  const recent = dedupeByBrand(SAMPLE_BUSINESSES.filter((b) => b.recentlyAdded));
+  return capCategory(recent, "HEALTH_BEAUTY", 1).slice(0, limit);
 }
 
 export function byCategory(cat: Category | "ALL"): SampleBusiness[] {
