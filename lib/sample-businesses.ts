@@ -74,15 +74,20 @@ const RETAIL_HOURS = {
 // once the upload flow is built. Each location gets a different cover via
 // rotateCover() below so adjacent listings don't look identical.
 
+// Curated 2026-05: dental-office interiors and clinical scenes only.
+// Earlier pool included a close-up of an open mouth mid-procedure, a man
+// reviewing brain CT scans, a guy in scrubs with a stethoscope, and hands
+// typing on a laptop — none of which read as "friendly neighborhood
+// dentist." Pool kept small but all four are clean, modern, and on-topic.
 const DENTAL_PHOTO_URLS = [
+  // Modern operatory with teal chair, large window, bright light
   "https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&w=1600&q=80",
-  "https://images.unsplash.com/photo-1606811971618-4486d14f3f99?auto=format&fit=crop&w=1600&q=80",
-  "https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?auto=format&fit=crop&w=1600&q=80",
-  "https://images.unsplash.com/photo-1606265752439-1f18756aa5fc?auto=format&fit=crop&w=1600&q=80",
-  "https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=1600&q=80",
-  "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=1600&q=80",
+  // Modern operatory with red chair, city-view windows
   "https://images.unsplash.com/photo-1616391182219-e080b4d1043a?auto=format&fit=crop&w=1600&q=80",
-  "https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=1600&q=80",
+  // Masked dental hygienist holding mirror + probe, looking at camera
+  "https://images.unsplash.com/photo-1606265752439-1f18756aa5fc?auto=format&fit=crop&w=1600&q=80",
+  // Dentist reviewing dental X-rays on a lightbox
+  "https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?auto=format&fit=crop&w=1600&q=80",
 ];
 
 // Rotate which photo is the cover so adjacent locations look distinct.
