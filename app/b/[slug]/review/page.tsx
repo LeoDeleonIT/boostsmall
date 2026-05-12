@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 
 interface PageProps {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; "just-posted"?: string }>;
 }
 
 export default async function WriteReviewPage({
@@ -28,7 +28,9 @@ export default async function WriteReviewPage({
   searchParams,
 }: PageProps) {
   const { slug } = await params;
-  const { error } = await searchParams;
+  const sp = await searchParams;
+  const { error } = sp;
+  const justPosted = sp["just-posted"] === "1";
 
   const business = findBusinessBySlug(slug);
   if (!business) notFound();
@@ -97,6 +99,16 @@ export default async function WriteReviewPage({
             </div>
           )}
 
+          {justPosted && existing && (
+            <div className="mb-6 rounded-2xl border border-sage/40 bg-sage/10 p-4 text-sm text-ink">
+              <p className="font-bold text-sage-deep">Review posted — thanks!</p>
+              <p className="mt-1 text-ink-soft">
+                Want to add photos? Scroll down to the photo section. You can
+                also edit your review here any time.
+              </p>
+            </div>
+          )}
+
           <form action={submitReviewAction} className="space-y-8">
             <input type="hidden" name="businessSlug" value={slug} />
 
@@ -150,6 +162,13 @@ export default async function WriteReviewPage({
                 className="rounded-full border border-border-strong bg-surface px-4 h-10 text-sm focus:outline-none focus:ring-2 focus:ring-terracotta"
               />
             </div>
+
+            {!existing && (
+              <p className="text-xs text-ink-soft">
+                Want to add photos? You&apos;ll be able to upload them right
+                after you post.
+              </p>
+            )}
 
             <div className="flex items-center justify-end gap-3 pt-2">
               <Button asChild variant="ghost" size="lg">

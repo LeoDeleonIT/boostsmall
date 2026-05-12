@@ -137,6 +137,12 @@ export async function submitReviewAction(formData: FormData) {
   void recomputeTrust(session.user.id);
 
   revalidatePath(`/b/${business.slug}`);
+  // First-time post: land on the edit page so the photo manager is visible
+  // and the reviewer can add photos right away. Editing stays on the biz
+  // page — they've already been through the photo flow once.
+  if (isFirstReview) {
+    redirect(`/b/${business.slug}/review?just-posted=1`);
+  }
   redirect(`/b/${business.slug}?reviewed=1`);
 }
 
