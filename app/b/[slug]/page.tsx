@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { RatingStars } from "@/components/review/rating-stars";
 import { ReviewPhotoGrid } from "@/components/review/review-photo-grid";
 import { ShareButton } from "@/components/business/share-button";
+import { CopyAddress } from "@/components/business/copy-address";
 import { haversineMiles, formatDistanceShort } from "@/lib/distance";
 import { MapPin } from "@/components/icons";
 import { MapboxMap } from "@/components/map/mapbox-map";
@@ -750,10 +751,12 @@ export default async function BusinessDetailPage({
               </div>
             )}
             <div className="p-5">
-              <p className="font-bold text-ink">{business.addressLine1}</p>
-              <p className="text-sm text-ink-soft">
-                {business.city}, {business.state} {business.postalCode}
-              </p>
+              <CopyAddress
+                addressLine1={business.addressLine1}
+                city={business.city}
+                state={business.state}
+                postalCode={business.postalCode}
+              />
               <Button
                 variant="ghost"
                 size="sm"
