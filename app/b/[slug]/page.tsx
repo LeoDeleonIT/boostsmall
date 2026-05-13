@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { RatingStars } from "@/components/review/rating-stars";
 import { ReviewPhotoGrid } from "@/components/review/review-photo-grid";
+import { ShareButton } from "@/components/business/share-button";
 import { MapPin } from "@/components/icons";
 import { MapboxMap } from "@/components/map/mapbox-map";
 import {
@@ -347,6 +348,11 @@ export default async function BusinessDetailPage({
                     Write a review
                   </Link>
                 </Button>
+                <ShareButton
+                  url={`https://boostsmall.com/b/${business.slug}`}
+                  title={business.name}
+                  text={`${business.name} on boostsmall — ${business.subcategory} in ${business.city}, ${business.state}`}
+                />
                 <form action={toggleBookmarkAction} className="shrink-0">
                   <input type="hidden" name="businessSlug" value={business.slug} />
                   <button
@@ -467,10 +473,17 @@ export default async function BusinessDetailPage({
 
           {reviews.length === 0 ? (
             <div className="rounded-2xl border border-border bg-surface p-10 text-center">
-              <p className="text-ink-soft">
-                No reviews yet on the mock data set. Be the first when the
-                database lands.
+              <p className="text-ink leading-relaxed">
+                No reviews yet — be the first.
               </p>
+              <p className="mt-2 text-sm text-ink-soft">
+                If you&apos;ve been to {business.name}, drop a few sentences
+                about what you ordered or who was working. Specifics help
+                neighbors decide.
+              </p>
+              <Button asChild variant="warm" size="lg" className="mt-5 rounded-full">
+                <Link href={`/b/${business.slug}/review`}>Write a review</Link>
+              </Button>
             </div>
           ) : (
             <ul className="space-y-6">
