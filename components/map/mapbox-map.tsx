@@ -50,9 +50,12 @@ export function MapboxMap({
     });
 
     if (interactive) {
+      // Top-left placement matches /search's ResultsMap so controls live
+      // in the same corner across the app, and so a hovered pin (when
+      // there's only one) doesn't ever sit under the buttons.
       map.addControl(
         new mapboxgl.NavigationControl({ showCompass: false, visualizePitch: false }),
-        "top-right"
+        "top-left"
       );
     }
     map.addControl(new mapboxgl.AttributionControl({ compact: true }));
@@ -63,9 +66,16 @@ export function MapboxMap({
 
     const markers: mapboxgl.Marker[] = [];
     for (const pin of pins) {
-      const el = document.createElement("div");
-      el.setAttribute("aria-label", pin.label ?? "");
-      el.style.cssText = [
+      // Mapbox positions the marker via `transform: translate(...)` on
+      // its container. We split the marker so the outer wrapper stays
+      // Mapbox-controlled, while an inner styled circle takes our
+      // background/scale-on-hover styles. Touching transform on the
+      // outer would snap the pin to (0,0) of the map.
+      const outer = document.createElement("div");
+      const inner = document.createElement("div");
+      outer.setAttribute("aria-label", pin.label ?? "");
+      outer.appendChild(inner);
+      inner.style.cssText = [
         "width: 22px",
         "height: 22px",
         "border-radius: 50%",
@@ -75,13 +85,13 @@ export function MapboxMap({
         "cursor: pointer",
         "transition: transform 120ms",
       ].join(";");
-      el.addEventListener("mouseenter", () => {
-        el.style.transform = "scale(1.15)";
+      inner.addEventListener("mouseenter", () => {
+        inner.style.transform = "scale(1.15)";
       });
-      el.addEventListener("mouseleave", () => {
-        el.style.transform = "scale(1)";
+      inner.addEventListener("mouseleave", () => {
+        inner.style.transform = "scale(1)";
       });
-      const marker = new mapboxgl.Marker(el)
+      const marker = new mapboxgl.Marker(outer)
         .setLngLat([pin.lng, pin.lat])
         .addTo(map);
       if (pin.label) {
