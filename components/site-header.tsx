@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { Wordmark } from "@/components/wordmark";
 import { UserNav } from "@/components/user-nav";
-import { Search } from "@/components/icons";
+import { SearchAutocomplete } from "@/components/search-autocomplete";
+import { searchIndex } from "@/lib/search-index";
 
 const NAV_ITEMS = [
   { label: "Eat & Drink",       href: "/search?category=FOOD_DRINK" },
@@ -44,17 +45,8 @@ export async function SiteHeader({
         </Link>
 
         {showSearch && isSolid && (
-          <form
-            action="/search"
-            className="hidden md:flex flex-1 max-w-xl items-center rounded-full border border-border-strong bg-surface px-4 py-2 focus-within:ring-2 focus-within:ring-terracotta"
-          >
-            <Search size={18} />
-            <input
-              type="text"
-              name="q"
-              placeholder="Coffee, dentist, bike repair…"
-              className="ml-3 flex-1 bg-transparent text-sm placeholder:text-ink-soft/70 focus:outline-none"
-            />
+          <form action="/search" className="hidden md:flex flex-1 max-w-xl">
+            <SearchAutocomplete entries={searchIndex()} size="sm" />
           </form>
         )}
 

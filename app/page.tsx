@@ -10,7 +10,6 @@ import { db } from "@/lib/db";
 import { RatingStars } from "@/components/review/rating-stars";
 import { relativeTime } from "@/lib/format";
 import {
-  Search,
   Utensils,
   House,
   Car,
@@ -19,6 +18,8 @@ import {
   ShoppingBag,
   MoreHorizontal,
 } from "@/components/icons";
+import { SearchAutocomplete } from "@/components/search-autocomplete";
+import { searchIndex } from "@/lib/search-index";
 
 const NAV_CATEGORIES: Array<{ label: string; href: string }> = [
   { label: "Eat & Drink",       href: "/search?category=FOOD_DRINK" },
@@ -169,15 +170,7 @@ export default async function HomePage() {
             action="/search"
             className="mt-10 flex flex-col sm:flex-row gap-2 max-w-2xl"
           >
-            <div className="flex-1 flex items-center rounded-full bg-white px-5 py-3 shadow-lg">
-              <Search size={20} />
-              <input
-                type="text"
-                name="q"
-                placeholder="Coffee, dentist, bike repair…"
-                className="ml-3 flex-1 bg-transparent text-base text-ink placeholder:text-ink-soft/60 focus:outline-none"
-              />
-            </div>
+            <SearchAutocomplete entries={searchIndex()} size="md" />
             <Button variant="warm" size="pill" type="submit" className="shrink-0">
               Search
             </Button>

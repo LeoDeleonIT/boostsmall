@@ -5,7 +5,9 @@ import { SiteFooter } from "@/components/site-footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { BusinessCard } from "@/components/business/business-card";
-import { MapPin, Search } from "@/components/icons";
+import { MapPin } from "@/components/icons";
+import { SearchAutocomplete } from "@/components/search-autocomplete";
+import { searchIndex } from "@/lib/search-index";
 import { ResultsMap } from "@/components/search/results-map";
 import { SearchInteractions } from "@/components/search/search-interactions";
 import { auth } from "@/lib/auth";
@@ -175,16 +177,13 @@ export default async function SearchPage({
       <section className="bg-background-soft border-b border-border">
         <div className="mx-auto max-w-[1400px] px-6 py-6 space-y-3">
           <form action="/search" className="flex flex-col md:flex-row gap-3">
-            <div className="flex-1 flex items-center rounded-full border border-border-strong bg-surface px-4 py-2.5 focus-within:ring-2 focus-within:ring-terracotta">
-              <Search size={18} />
-              <input
-                type="text"
-                name="q"
-                defaultValue={params.q ?? ""}
-                placeholder="Coffee, dentist, bike repair…"
-                className="ml-3 flex-1 bg-transparent text-base placeholder:text-ink-soft/70 focus:outline-none"
-              />
-            </div>
+            <SearchAutocomplete
+              entries={searchIndex()}
+              size="sm"
+              className="!py-2.5 !text-base"
+              defaultQuery={params.q ?? ""}
+            />
+
             <div className="flex items-center rounded-full border border-border-strong bg-surface px-4 py-2.5 md:max-w-xs">
               <MapPin size={18} />
               <select
