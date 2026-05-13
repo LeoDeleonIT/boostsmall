@@ -11,6 +11,12 @@ export const metadata: Metadata = {
     "boostsmall is a discovery and review platform for independent, family-owned businesses in the Houston metro and East Texas. No chains, no franchises.",
 };
 
+// Force dynamic rendering — the page reads live counts from the DB, and
+// trying to prerender it at build time fails on Vercel preview deploys
+// (no DATABASE_URL). Per-request rendering is fine; this page is low
+// traffic and the counts feel fresher this way anyway.
+export const dynamic = "force-dynamic";
+
 export default async function AboutPage() {
   const [businesses, chains] = await Promise.all([
     db.business.count({ where: { status: "APPROVED" } }),
