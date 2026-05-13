@@ -43,9 +43,29 @@ export async function generateMetadata({
   const { slug } = await params;
   const b = findBusinessBySlug(slug);
   if (!b) return { title: "Not found" };
+  const url = `https://boostsmall.com/b/${b.slug}`;
+  const title = `${b.name} · ${b.subcategory} in ${b.city}, ${b.state}`;
+  // First photo doubles as the social card. Falls through cleanly when
+  // the business has no photo set — OG just omits the image block.
+  const heroImage = b.photoUrls[0];
   return {
     title: b.name,
     description: b.description,
+    alternates: { canonical: url },
+    openGraph: {
+      type: "website",
+      url,
+      title,
+      description: b.description,
+      siteName: "boostsmall",
+      images: heroImage ? [{ url: heroImage, alt: b.name }] : undefined,
+    },
+    twitter: {
+      card: heroImage ? "summary_large_image" : "summary",
+      title,
+      description: b.description,
+      images: heroImage ? [heroImage] : undefined,
+    },
   };
 }
 
@@ -257,8 +277,53 @@ export default async function BusinessDetailPage({
     `${business.addressLine1}, ${business.city}, ${business.state} ${business.postalCode}`
   )}`;
 
+  // Schema.org LocalBusiness data — lets Google show the rating, address,
+  // and price tier as a rich card in search results. @type narrows by
+  // category so dentists get Dentist, restaurants get Restaurant, etc.
+  const ldType = schemaTypeFor(business.category, business.subcategory);
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": ldType,
+    name: business.name,
+    description: business.description,
+    url: `https://boostsmall.com/b/${business.slug}`,
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: business.addressLine1,
+      addressLocality: business.city,
+      addressRegion: business.state,
+      postalCode: business.postalCode,
+      addressCountry: "US",
+    },
+    geo:
+      business.lat && business.lng
+        ? {
+            "@type": "GeoCoordinates",
+            latitude: business.lat,
+            longitude: business.lng,
+          }
+        : undefined,
+    telephone: business.phone,
+    priceRange: "$".repeat(business.priceTier),
+    image: heroPhoto,
+    aggregateRating:
+      business.reviewCount > 0
+        ? {
+            "@type": "AggregateRating",
+            ratingValue: business.rating,
+            reviewCount: business.reviewCount,
+          }
+        : undefined,
+  };
+
   return (
     <main className="min-h-screen flex flex-col bg-background">
+      <script
+        type="application/ld+json"
+        // Stringify here (not via JSON.stringify in JSX) so undefined fields
+        // get dropped instead of serialized as null.
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <SiteHeader />
 
       {/* PHOTO STRIP */}
@@ -783,4 +848,38 @@ export default async function BusinessDetailPage({
       <SiteFooter />
     </main>
   );
+}
+
+// Schema.org @type that best matches the listing. Narrower types are
+// better for rich-result eligibility, so we map by category +
+// subcategory keywords and fall back to LocalBusiness.
+function schemaTypeFor(category: string, subcategory: string): string {
+  const sub = subcategory.toLowerCase();
+  if (category === "FOOD_DRINK") {
+    if (sub.includes("bakery") || sub.includes("panadería")) return "Bakery";
+    if (sub.includes("coffee") || sub.includes("café") || sub.includes("cafe")) return "CafeOrCoffeeShop";
+    if (sub.includes("bar")) return "BarOrPub";
+    return "Restaurant";
+  }
+  if (category === "HEALTH_BEAUTY") {
+    if (sub.includes("dentist")) return "Dentist";
+    if (sub.includes("salon") || sub.includes("beauty")) return "BeautySalon";
+    return "MedicalBusiness";
+  }
+  if (category === "SERVICES") {
+    if (sub.includes("auto") || sub.includes("mechanic") || sub.includes("diesel"))
+      return "AutoRepair";
+    if (sub.includes("plumbing")) return "Plumber";
+    if (sub.includes("pest")) return "ProfessionalService";
+    return "ProfessionalService";
+  }
+  if (category === "RETAIL") {
+    if (sub.includes("bookstore") || sub.includes("book")) return "BookStore";
+    if (sub.includes("florist")) return "Florist";
+    if (sub.includes("pawn") || sub.includes("mercado") || sub.includes("grocery"))
+      return "Store";
+    return "Store";
+  }
+  if (category === "ARTS") return "EntertainmentBusiness";
+  return "LocalBusiness";
 }
