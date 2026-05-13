@@ -106,7 +106,7 @@ export default async function OwnerDashboardPage({
         ) : null}
 
         {/* INBOX — unresponded reviews across all owned businesses */}
-        {unrespondedReviews.length > 0 && (
+        {owned.length > 0 && (
           <section className="mt-10">
             <div className="flex items-end justify-between mb-4">
               <div>
@@ -114,40 +114,52 @@ export default async function OwnerDashboardPage({
                   Inbox
                 </p>
                 <h2 className="font-display text-2xl text-ink leading-tight">
-                  {unrespondedReviews.length}{" "}
-                  {unrespondedReviews.length === 1 ? "review" : "reviews"} waiting on
-                  your response
+                  {unrespondedReviews.length === 0
+                    ? "All caught up"
+                    : `${unrespondedReviews.length} ${
+                        unrespondedReviews.length === 1 ? "review" : "reviews"
+                      } waiting on your response`}
                 </h2>
               </div>
             </div>
-            <ul className="space-y-3">
-              {unrespondedReviews.map((r) => (
-                <li
-                  key={r.id}
-                  className="rounded-2xl border border-border bg-surface p-4 flex flex-col sm:flex-row sm:items-center gap-4"
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <span className="font-bold text-ink">{r.business.name}</span>
-                      <span className="text-ink-soft/60">·</span>
-                      <RatingStars rating={r.rating} size="sm" />
-                      <span className="text-xs text-ink-soft">
-                        {r.user.name ?? r.user.username ?? "Neighbor"} ·{" "}
-                        {relativeTime(r.createdAt.toISOString())}
-                      </span>
+            {unrespondedReviews.length === 0 ? (
+              <div className="rounded-2xl border border-sage/30 bg-sage/8 p-6 flex items-center gap-4">
+                <span className="text-2xl" aria-hidden>✓</span>
+                <p className="text-sm text-ink leading-relaxed">
+                  No reviews waiting on a reply. New ones will land here as
+                  neighbors post them — you&apos;ll also get an email.
+                </p>
+              </div>
+            ) : (
+              <ul className="space-y-3">
+                {unrespondedReviews.map((r) => (
+                  <li
+                    key={r.id}
+                    className="rounded-2xl border border-border bg-surface p-4 flex flex-col sm:flex-row sm:items-center gap-4"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <span className="font-bold text-ink">{r.business.name}</span>
+                        <span className="text-ink-soft/60">·</span>
+                        <RatingStars rating={r.rating} size="sm" />
+                        <span className="text-xs text-ink-soft">
+                          {r.user.name ?? r.user.username ?? "Neighbor"} ·{" "}
+                          {relativeTime(r.createdAt.toISOString())}
+                        </span>
+                      </div>
+                      <p className="mt-2 text-sm text-ink-soft line-clamp-2">
+                        {r.body}
+                      </p>
                     </div>
-                    <p className="mt-2 text-sm text-ink-soft line-clamp-2">
-                      {r.body}
-                    </p>
-                  </div>
-                  <Button variant="sage" size="sm" asChild className="shrink-0">
-                    <Link href={`/b/${r.business.slug}#review-${r.id}`}>
-                      Respond →
-                    </Link>
-                  </Button>
-                </li>
-              ))}
-            </ul>
+                    <Button variant="sage" size="sm" asChild className="shrink-0">
+                      <Link href={`/b/${r.business.slug}#review-${r.id}`}>
+                        Respond →
+                      </Link>
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
         )}
 

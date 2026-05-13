@@ -7,6 +7,7 @@ import { UserNav } from "@/components/user-nav";
 import { topRated, recentlyAdded, SAMPLE_BUSINESSES } from "@/lib/sample-businesses";
 import { championsLoveBusinesses } from "@/lib/champions-love";
 import { db } from "@/lib/db";
+import { auth } from "@/lib/auth";
 import { RatingStars } from "@/components/review/rating-stars";
 import { relativeTime } from "@/lib/format";
 import {
@@ -83,7 +84,8 @@ const TILES: CategoryTile[] = [
 ];
 
 export default async function HomePage() {
-  const [championsPicks, latestReviews] = await Promise.all([
+  const session = await auth();
+  const [championsPicks, latestReviews, freshUser] = await Promise.all([
     championsLoveBusinesses(),
     db.review.findMany({
       where: { status: "PUBLISHED" },
@@ -98,7 +100,31 @@ export default async function HomePage() {
         business: { select: { slug: true, name: true, city: true, state: true } },
       },
     }),
+    // Welcome banner is shown for signed-in users who haven't written
+    // their first review yet AND whose account is under 30 days old.
+    // Either condition naturally clears the banner (write a review or
+    // the 30-day window passes).
+    session?.user?.id
+      ? db.user.findUnique({
+          where: { id: session.user.id },
+          select: {
+            name: true,
+            username: true,
+            createdAt: true,
+            _count: { select: { reviews: true } },
+          },
+        })
+      : Promise.resolve(null),
   ]);
+
+  const welcome = (() => {
+    if (!freshUser) return null;
+    if (freshUser._count.reviews > 0) return null;
+    const daysOld = (Date.now() - freshUser.createdAt.getTime()) / 86_400_000;
+    if (daysOld > 30) return null;
+    const firstName = (freshUser.name ?? freshUser.username ?? "neighbor").split(" ")[0];
+    return { firstName };
+  })();
 
   // Stats strip — pulls from the static seed so it stays accurate without
   // a DB round-trip per page load.
@@ -107,6 +133,28 @@ export default async function HomePage() {
   const categoryCount = new Set(SAMPLE_BUSINESSES.map((b) => b.category)).size;
   return (
     <main className="min-h-screen flex flex-col bg-background">
+      {/* ─── WELCOME (fresh signed-in users only) ───────────────────────── */}
+      {welcome && (
+        <section className="bg-sage/10 border-b border-sage/30">
+          <div className="mx-auto max-w-[1200px] px-6 py-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <p className="text-xs uppercase tracking-[0.16em] text-sage-deep font-bold">
+                Welcome to boostsmall
+              </p>
+              <p className="mt-1 text-ink leading-relaxed">
+                Hey {welcome.firstName} — you&apos;re a{" "}
+                <strong>New Neighbor</strong>. Write your first review to climb
+                to <strong>Local Supporter</strong> and help the family-owned
+                spots you love get seen.
+              </p>
+            </div>
+            <Button variant="warm" asChild className="shrink-0 self-start md:self-auto">
+              <Link href="/search">Find a place to review</Link>
+            </Button>
+          </div>
+        </section>
+      )}
+
       {/* ─── HERO ───────────────────────────────────────────────────────── */}
       <section className="relative min-h-[88vh] overflow-hidden text-white">
         {/* Background photo (placeholder until owners upload their own) */}

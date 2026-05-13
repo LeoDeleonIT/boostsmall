@@ -120,7 +120,7 @@ export default async function UserProfilePage({
 
             <p className="text-ink-soft mt-1">@{profile.username} · joined {joined}</p>
 
-            {trust && trust.reviewCount > 0 && (
+            {trust && (
               <>
                 <p className="mt-3 text-sm text-ink-soft max-w-[60ch]">
                   <span className="font-semibold text-ink">{trust.tier.label}</span>{" "}
