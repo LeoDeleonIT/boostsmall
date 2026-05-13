@@ -2,8 +2,17 @@ import "server-only";
 import { Resend } from "resend";
 import { APP_URL } from "@/lib/env";
 
-// Resend client — re-uses one instance per Node process.
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Resend client is lazy-initialized: the SDK throws synchronously if you
+// `new Resend(undefined)`, which would crash the Vercel build's
+// page-data-collection phase on preview deploys that lack the env var.
+// Constructed on first send instead, after the env-var guard in safeSend.
+let resendInstance: Resend | null = null;
+function getResend(): Resend {
+  if (!resendInstance) {
+    resendInstance = new Resend(process.env.RESEND_API_KEY);
+  }
+  return resendInstance;
+}
 
 const FROM_NOTIFICATIONS =
   process.env.RESEND_FROM_NOTIFICATIONS ?? "notifications@boostsmall.com";
@@ -176,7 +185,7 @@ async function safeSend(args: SendArgs): Promise<{ ok: boolean; error?: string }
     return { ok: false, error: "no-api-key" };
   }
   try {
-    const result = await resend.emails.send({
+    const result = await getResend().emails.send({
       from: `boostsmall <${FROM_NOTIFICATIONS}>`,
       to: args.to,
       replyTo: REPLY_TO,
