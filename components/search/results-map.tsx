@@ -67,9 +67,13 @@ export function ResultsMap({
     });
     mapRef.current = map;
 
+    // Top-left placement: the dense East End cluster lives in the
+    // bottom-right of the Houston viewport, so corner-right controls
+    // ended up under cluster bubbles after a zoom expansion. Top-left
+    // is always clear at Houston-metro framing.
     map.addControl(
       new mapboxgl.NavigationControl({ showCompass: false, visualizePitch: false }),
-      "top-right"
+      "top-left"
     );
     map.addControl(new mapboxgl.AttributionControl({ compact: true }));
     map.dragRotate.disable();
