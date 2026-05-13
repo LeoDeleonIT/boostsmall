@@ -160,6 +160,17 @@ export default async function SearchPage({
     if (category === "ALL") {
       spread = capCategory(spread, "HEALTH_BEAUTY", 1);
     }
+    // Featured non-dental listings float to the very top of the
+    // unfiltered view. Dental featured items are excluded — capCategory
+    // already pins them at slot 3, and we don't want a featured dentist
+    // to take the #1 spot away from a food/retail/service spot.
+    const featured = spread.filter(
+      (b) => b.featured && b.category !== "HEALTH_BEAUTY",
+    );
+    const rest = spread.filter(
+      (b) => !b.featured || b.category === "HEALTH_BEAUTY",
+    );
+    spread = [...featured, ...rest];
     const slugToIndex = new Map(spread.map((b, i) => [b.slug, i]));
     results.sort(
       (a, b) =>
