@@ -17,20 +17,46 @@ export default async function AdminPage() {
   const session = await auth();
   if (!session?.user || session.user.role !== "ADMIN") redirect("/sign-in");
 
+  const sevenDaysAgo = new Date(Date.now() - 7 * 86_400_000);
   const [
     businessCount,
     pendingCount,
     chainsCount,
     usersCount,
+    activeUsers7d,
+    newUsers7d,
     flagsOpen,
     activity,
+    recentUsers,
   ] = await Promise.all([
     db.business.count({ where: { status: "APPROVED" } }),
     db.business.count({ where: { status: "PENDING" } }),
     db.chainBlocklist.count(),
     db.user.count(),
+    db.user.count({ where: { lastSeenAt: { gte: sevenDaysAgo } } }),
+    db.user.count({ where: { createdAt: { gte: sevenDaysAgo } } }),
     db.moderationFlag.count({ where: { status: "OPEN" } }),
     recentActivity(15),
+    db.user.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 25,
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        username: true,
+        role: true,
+        trustScore: true,
+        createdAt: true,
+        lastSeenAt: true,
+        _count: {
+          select: {
+            reviews: true,
+            ownedBusinesses: true,
+          },
+        },
+      },
+    }),
   ]);
 
   return (
@@ -52,12 +78,14 @@ export default async function AdminPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-10">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-10">
           <Stat label="Approved businesses" value={businessCount} href="/search" />
           <Stat label="Pending review" value={pendingCount} href="/moderate" highlight={pendingCount > 0} />
           <Stat label="Open flags" value={flagsOpen} href="/moderate" highlight={flagsOpen > 0} />
           <Stat label="Chains blocked" value={chainsCount} href="/admin/chains" />
-          <Stat label="Users" value={usersCount} />
+          <Stat label="Total users" value={usersCount} />
+          <Stat label="Active (7d)" value={activeUsers7d} />
+          <Stat label="New (7d)" value={newUsers7d} highlight={newUsers7d > 0} />
         </div>
 
         <div className="grid lg:grid-cols-2 gap-6">
@@ -123,6 +151,126 @@ export default async function AdminPage() {
                 ))}
               </ul>
             )}
+          </div>
+        </div>
+
+        {/* USERS — most recent 25 signups with their footprint. Click a
+            row to open the public profile. */}
+        <div className="mt-10 rounded-2xl border border-border bg-surface overflow-hidden">
+          <div className="flex items-center justify-between px-6 py-5 border-b border-border">
+            <div>
+              <h2 className="font-display text-2xl text-ink leading-tight">
+                Users
+              </h2>
+              <p className="text-sm text-ink-soft mt-1">
+                {usersCount.toLocaleString()} total · {newUsers7d} new in the
+                last 7 days · most recent {recentUsers.length} below
+              </p>
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-background-soft text-xs uppercase tracking-widest text-ink-soft font-bold">
+                <tr>
+                  <th className="text-left px-6 py-3">User</th>
+                  <th className="text-left px-4 py-3">Email</th>
+                  <th className="text-left px-4 py-3">Joined</th>
+                  <th className="text-left px-4 py-3">Last seen</th>
+                  <th className="text-right px-4 py-3">Reviews</th>
+                  <th className="text-right px-4 py-3">Owned</th>
+                  <th className="text-right px-4 py-3">Trust</th>
+                  <th className="text-left px-4 py-3">Role</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentUsers.map((u) => {
+                  const initial = (
+                    u.name?.[0] ??
+                    u.username?.[0] ??
+                    u.email[0] ??
+                    "?"
+                  ).toUpperCase();
+                  return (
+                    <tr
+                      key={u.id}
+                      className="border-b border-border last:border-b-0 hover:bg-background-soft transition-colors"
+                    >
+                      <td className="px-6 py-3">
+                        {u.username ? (
+                          <Link
+                            href={`/u/${u.username}`}
+                            className="inline-flex items-center gap-3 hover:text-terracotta-deep"
+                          >
+                            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-sage/15 text-sage-deep font-bold text-xs shrink-0">
+                              {initial}
+                            </span>
+                            <span className="min-w-0">
+                              <span className="block font-semibold text-ink leading-tight truncate max-w-[180px]">
+                                {u.name ?? `@${u.username}`}
+                              </span>
+                              <span className="block text-xs text-ink-soft truncate max-w-[180px]">
+                                @{u.username}
+                              </span>
+                            </span>
+                          </Link>
+                        ) : (
+                          <span className="inline-flex items-center gap-3">
+                            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-ink/8 text-ink-soft font-bold text-xs shrink-0">
+                              {initial}
+                            </span>
+                            <span className="text-ink-soft italic text-xs">
+                              (no username yet)
+                            </span>
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-ink-soft text-xs">
+                        <span className="break-all">{u.email}</span>
+                      </td>
+                      <td className="px-4 py-3 text-ink whitespace-nowrap">
+                        <span className="block">
+                          {relativeTime(u.createdAt.toISOString())}
+                        </span>
+                        <span className="block text-xs text-ink-soft tnum">
+                          {u.createdAt.toLocaleDateString()}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-ink-soft whitespace-nowrap">
+                        {u.lastSeenAt
+                          ? relativeTime(u.lastSeenAt.toISOString())
+                          : "—"}
+                      </td>
+                      <td className="px-4 py-3 text-right tnum">
+                        {u._count.reviews}
+                      </td>
+                      <td className="px-4 py-3 text-right tnum">
+                        {u._count.ownedBusinesses}
+                      </td>
+                      <td className="px-4 py-3 text-right tnum text-ink-soft">
+                        {u.trustScore}
+                      </td>
+                      <td className="px-4 py-3">
+                        {u.role === "ADMIN" ? (
+                          <span className="inline-block rounded-full bg-terracotta/15 text-terracotta-deep text-xs font-bold px-2 py-0.5">
+                            admin
+                          </span>
+                        ) : u.role === "MODERATOR" ? (
+                          <span className="inline-block rounded-full bg-sage/15 text-sage-deep text-xs font-bold px-2 py-0.5">
+                            mod
+                          </span>
+                        ) : u.role === "OWNER" ? (
+                          <span className="inline-block rounded-full bg-sage/15 text-sage-deep text-xs font-bold px-2 py-0.5">
+                            owner
+                          </span>
+                        ) : (
+                          <span className="text-ink-soft text-xs">user</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
       </section>
