@@ -13,9 +13,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${base}/search`,            lastModified: now, changeFrequency: "daily",   priority: 0.9 },
     { url: `${base}/submit`,            lastModified: now, changeFrequency: "monthly", priority: 0.5 },
     { url: `${base}/owner`,             lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${base}/about`,             lastModified: now, changeFrequency: "monthly", priority: 0.5 },
     { url: `${base}/about/trust`,       lastModified: now, changeFrequency: "monthly", priority: 0.5 },
     { url: `${base}/recommendations`,   lastModified: now, changeFrequency: "weekly",  priority: 0.6 },
     { url: `${base}/discover`,          lastModified: now, changeFrequency: "weekly",  priority: 0.6 },
+    { url: `${base}/privacy`,           lastModified: now, changeFrequency: "yearly",  priority: 0.3 },
+    { url: `${base}/terms`,             lastModified: now, changeFrequency: "yearly",  priority: 0.3 },
   ];
 
   const bizPages: MetadataRoute.Sitemap = SAMPLE_BUSINESSES.map((b) => ({

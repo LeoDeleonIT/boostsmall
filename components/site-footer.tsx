@@ -10,7 +10,8 @@ export function SiteFooter() {
           <Link href="/about" className="hover:text-ink">About</Link>
           <Link href="/submit" className="hover:text-ink">Add a business</Link>
           <Link href="/owner" className="hover:text-ink">For owners</Link>
-          <Link href="/design" className="hover:text-ink">Design preview</Link>
+          <Link href="/privacy" className="hover:text-ink">Privacy</Link>
+          <Link href="/terms" className="hover:text-ink">Terms</Link>
         </div>
         <p className="text-xs text-ink-soft">
           © 2026 boostsmall · Houston metro
