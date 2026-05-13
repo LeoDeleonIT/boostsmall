@@ -13,7 +13,10 @@ export default auth((req) => {
       return NextResponse.redirect(new URL("/sign-in", req.url));
     }
   }
-  if (pathname.startsWith("/owner")) {
+  // /owner itself is the public "For owners" landing page — only the
+  // sub-routes (dashboard, claim, business) need a signed-in session.
+  // Trailing slash matters here: matches /owner/anything but not /owner.
+  if (pathname.startsWith("/owner/")) {
     if (!req.auth) return NextResponse.redirect(new URL("/sign-in", req.url));
   }
 
