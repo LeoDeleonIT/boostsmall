@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { RatingStars } from "@/components/review/rating-stars";
 import { ReviewPhotoGrid } from "@/components/review/review-photo-grid";
 import { ShareButton } from "@/components/business/share-button";
+import { haversineMiles, formatDistanceShort } from "@/lib/distance";
 import { MapPin } from "@/components/icons";
 import { MapboxMap } from "@/components/map/mapbox-map";
 import {
@@ -276,6 +277,20 @@ export default async function BusinessDetailPage({
   const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
     `${business.addressLine1}, ${business.city}, ${business.state} ${business.postalCode}`
   )}`;
+
+  // Nearby places — closest 8 businesses by straight-line distance.
+  // Skips self, and any business missing coords. Walkable spots first,
+  // mileage shown in feet under ~0.6 mi for the "feels concrete" effect
+  // ShowMeLocal uses.
+  const nearby = SAMPLE_BUSINESSES.filter(
+    (b) => b.slug !== business.slug && b.lat && b.lng,
+  )
+    .map((b) => ({
+      business: b,
+      distance: haversineMiles(business.lat, business.lng, b.lat, b.lng),
+    }))
+    .sort((a, b) => a.distance - b.distance)
+    .slice(0, 8);
 
   // Schema.org LocalBusiness data — lets Google show the rating, address,
   // and price tier as a rich card in search results. @type narrows by
@@ -844,6 +859,42 @@ export default async function BusinessDetailPage({
           )}
         </aside>
       </section>
+
+      {/* MORE PLACES NEAR HERE — closest 8 by haversine, walkable
+          distances shown in feet for the "this is right there" feel. */}
+      {nearby.length > 0 && (
+        <section className="border-t border-border bg-background-soft">
+          <div className="mx-auto max-w-[1200px] px-6 py-12">
+            <p className="text-xs uppercase tracking-[0.16em] text-sage-deep font-bold mb-2">
+              More places nearby
+            </p>
+            <h2 className="font-display text-2xl md:text-3xl text-ink leading-tight mb-6">
+              Near {business.name}
+            </h2>
+            <ul className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {nearby.map(({ business: b, distance }) => (
+                <li key={b.slug}>
+                  <Link
+                    href={`/b/${b.slug}`}
+                    className="block rounded-2xl border border-border bg-surface p-4 hover:border-border-strong hover:shadow-sm transition-all"
+                  >
+                    <p className="font-bold text-ink leading-tight">{b.name}</p>
+                    <p className="text-xs text-ink-soft mt-1">
+                      {b.subcategory}
+                    </p>
+                    <p className="text-xs text-ink-soft mt-2 tnum">
+                      {b.addressLine1}, {b.city}, {b.state} ·{" "}
+                      <span className="font-semibold text-ink">
+                        {formatDistanceShort(distance)}
+                      </span>
+                    </p>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      )}
 
       <SiteFooter />
     </main>

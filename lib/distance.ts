@@ -21,3 +21,14 @@ export function formatDistanceMiles(mi: number): string {
   if (mi < 10) return `${mi.toFixed(1)} mi`;
   return `${Math.round(mi)} mi`;
 }
+
+// Short, ShowMeLocal-style: feet under ~0.6 mi, then miles. Used on the
+// "More places near here" strip where the distance is meant to feel
+// concrete and walkable rather than abstract.
+export function formatDistanceShort(mi: number): string {
+  const feet = mi * 5280;
+  if (feet < 100) return "< 100 ft";
+  if (feet < 3200) return `${Math.round(feet).toLocaleString()} ft`;
+  if (mi < 10) return `${mi.toFixed(2)} mi`;
+  return `${mi.toFixed(1)} mi`;
+}
