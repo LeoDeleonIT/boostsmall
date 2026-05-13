@@ -217,14 +217,20 @@ export function ResultsMap({
         | (PinProps & { cluster: false })
         | { cluster: true; cluster_id: number; point_count: number; point_count_abbreviated: string };
 
+      // Marker is built as an outer wrapper (Mapbox positions this via
+      // `transform: translate(...)`) containing an inner styled circle
+      // we mutate freely. Touching `transform` on the outer would clobber
+      // Mapbox's translate and snap the marker to (0,0) of the map.
+      const outer = document.createElement("div");
+      const inner = document.createElement("div");
+      outer.appendChild(inner);
+
       if (props.cluster) {
-        // Cluster bubble — size scales with count, click expands.
         const count = props.point_count;
         const size =
           count >= 50 ? 44 : count >= 15 ? 38 : count >= 5 ? 32 : 28;
-        const el = document.createElement("div");
-        el.setAttribute("aria-label", `${count} places`);
-        el.style.cssText = [
+        outer.setAttribute("aria-label", `${count} places`);
+        inner.style.cssText = [
           `width: ${size}px`,
           `height: ${size}px`,
           "border-radius: 50%",
@@ -241,29 +247,27 @@ export function ResultsMap({
           "cursor: pointer",
           "transition: transform 120ms",
         ].join(";");
-        el.textContent = props.point_count_abbreviated;
-        el.addEventListener("mouseenter", () => {
-          el.style.transform = "scale(1.08)";
+        inner.textContent = props.point_count_abbreviated;
+        inner.addEventListener("mouseenter", () => {
+          inner.style.transform = "scale(1.08)";
         });
-        el.addEventListener("mouseleave", () => {
-          el.style.transform = "scale(1)";
+        inner.addEventListener("mouseleave", () => {
+          inner.style.transform = "scale(1)";
         });
         const clusterId = props.cluster_id;
-        el.addEventListener("click", () => {
+        inner.addEventListener("click", () => {
           const expansion = Math.min(idx.getClusterExpansionZoom(clusterId), 18);
           map.easeTo({ center: [lng, lat], zoom: expansion });
         });
-        const marker = new mapboxgl.Marker(el).setLngLat([lng, lat]).addTo(map);
+        const marker = new mapboxgl.Marker(outer).setLngLat([lng, lat]).addTo(map);
         markersRef.current.push(marker);
         continue;
       }
 
-      // Individual pin
       const p = props;
-      const el = document.createElement("div");
-      el.setAttribute("aria-label", p.name);
-      el.dataset.slug = p.slug;
-      el.style.cssText = [
+      outer.setAttribute("aria-label", p.name);
+      inner.dataset.slug = p.slug;
+      inner.style.cssText = [
         "width: 24px",
         "height: 24px",
         "border-radius: 50%",
@@ -273,18 +277,18 @@ export function ResultsMap({
         "cursor: pointer",
         "transition: transform 120ms, background-color 120ms, box-shadow 120ms",
       ].join(";");
-      el.addEventListener("mouseenter", () => {
-        el.style.transform = "scale(1.2)";
+      inner.addEventListener("mouseenter", () => {
+        inner.style.transform = "scale(1.2)";
       });
-      el.addEventListener("mouseleave", () => {
-        if (el.dataset.active !== "true") el.style.transform = "scale(1)";
+      inner.addEventListener("mouseleave", () => {
+        if (inner.dataset.active !== "true") inner.style.transform = "scale(1)";
       });
-      el.addEventListener("click", () => {
+      inner.addEventListener("click", () => {
         window.dispatchEvent(
           new CustomEvent("bs:pin-click", { detail: { slug: p.slug } }),
         );
       });
-      const marker = new mapboxgl.Marker(el).setLngLat([lng, lat]).addTo(map);
+      const marker = new mapboxgl.Marker(outer).setLngLat([lng, lat]).addTo(map);
       marker.setPopup(
         new mapboxgl.Popup({ offset: 20, closeButton: false }).setHTML(
           popupHtml(p),
