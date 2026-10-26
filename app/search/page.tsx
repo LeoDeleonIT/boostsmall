@@ -18,9 +18,22 @@ import { HOUSTON_METRO } from "@/lib/cities";
 import { haversineMiles, formatDistanceMiles } from "@/lib/distance";
 import { lookupZipAction } from "@/server/actions/zip-lookup";
 
-export const metadata: Metadata = {
-  title: "Search local favorites",
-};
+// Every filter, sort and radius link on this page produces a new URL, so
+// crawlers can walk an endless set of combinations, each one a dynamic render
+// with database queries. Only the bare /search page is indexable.
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}): Promise<Metadata> {
+  const params = await searchParams;
+  const filtered = Object.values(params).some((v) => v !== undefined);
+  return {
+    title: "Search local favorites",
+    alternates: { canonical: "/search" },
+    ...(filtered && { robots: { index: false, follow: false } }),
+  };
+}
 
 const ALL_CATEGORIES: Array<Category | "ALL"> = [
   "ALL",
