@@ -5,5 +5,7 @@ Disallow: /admin
 Disallow: /moderate
 Disallow: /owner/
 Disallow: /api/
+# Filtered search URLs are an endless crawl space; the bare /search page stays crawlable.
+Disallow: /search?
 
 Sitemap: https://boostsmall.com/sitemap.xml
